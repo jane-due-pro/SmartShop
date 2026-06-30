@@ -2,17 +2,16 @@ package guat.lxy.bigdata.smartshop.service.impl;
 
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
-import guat.lxy.bigdata.smartshop.config.SerializablePage;
 import guat.lxy.bigdata.smartshop.entity.Product;
 import guat.lxy.bigdata.smartshop.mapper.ProductMapper;
 import guat.lxy.bigdata.smartshop.service.ProductService;
+import guat.lxy.bigdata.smartshop.util.SerializablePage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.Caching;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -22,14 +21,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * ProductServiceImpl
+ * 商品服务实现。
  *
- * 缓存策略（双重缓存）：
- * 1. 声明式（@Cacheable / @CacheEvict）：单商品查询走 Redis，key = smartshop:cache:product:{id}
- * 2. 编程式（RedisTemplate）：商品列表 + 复杂分页条件查询走 Redis
- *    - 商品全量列表 key：smartshop:list:product:all
- *    - 分页查询 key：smartshop:list:product:search:{条件哈希}，TTL 5 分钟
- *    - 任何写操作清掉 list:product:* 的所有相关 key（保证强一致）
+ * 缓存策略：
+ * 1. 声明式（@Cacheable / @CacheEvict）：单商品查询 + 全量列表走 Redis "product" 命名空间
+ * 2. 编程式（RedisTemplate）：分页条件查询走 Redis，key = smartshop:list:product:search:{条件哈希}
+ *    写操作清除所有 smartshop:list:product:* 的 key
  */
 @Service
 public class ProductServiceImpl implements ProductService {
@@ -48,79 +45,65 @@ public class ProductServiceImpl implements ProductService {
     @Value("${smartshop.cache.ttl.product-list}")
     private long listTtlSeconds;
 
-    // ===================== 声明式缓存（单商品） =====================
+    // ===================== 声明式缓存 =====================
 
     @Override
     @Cacheable(value = "product", key = "'all'")
     public List<Product> findAll() {
-        log.info("[Product#findAll] Cache MISS - 查询 MySQL -> product (with category)");
+        log.info("[Product#findAll] Cache MISS - query MySQL");
         return productMapper.findAllWithCategory();
     }
 
     @Override
     @Cacheable(value = "product", key = "#id")
     public Product findById(Integer id) {
-        log.info("[Product#findById({})] Cache MISS - 查询 MySQL", id);
+        log.info("[Product#findById({})] Cache MISS - query MySQL", id);
         return productMapper.findByIdWithCategory(id);
     }
 
     // ===================== 编程式 Redis 缓存（列表） =====================
 
-    /**
-     * Welcome 页用的"全量商品列表"，对应 key：smartshop:list:product:all
-     */
     @SuppressWarnings("unchecked")
+    @Override
     public List<Product> findAllWithCache() {
         Object cached = redisTemplate.opsForValue().get(LIST_KEY_ALL);
         if (cached instanceof List) {
-            log.info("[Product#findAllWithCache] ✅ Redis 缓存命中，不执行 SQL");
+            log.info("[Product#findAllWithCache] Redis hit");
             return (List<Product>) cached;
         }
-        log.info("[Product#findAllWithCache] ❌ Redis 缓存未命中，执行 SQL");
+        log.info("[Product#findAllWithCache] Redis miss, query MySQL");
         List<Product> list = productMapper.findAllWithCategory();
         if (list != null) {
             redisTemplate.opsForValue().set(LIST_KEY_ALL, list, listTtlSeconds, TimeUnit.SECONDS);
-            log.info("[Product#findAllWithCache] 已写入 Redis, key={}, ttl={}s, size={}",
-                    LIST_KEY_ALL, listTtlSeconds, list.size());
         }
         return list;
     }
 
-    /**
-     * 复杂分页条件查询的 Redis 缓存版本：
-     * - 先把入参拼成稳定的 cacheKey
-     * - 命中 Redis 直接返回（内部用 SerializablePage 避免 PageInfo 不可序列化的坑）
-     */
     @Override
     public PageInfo<Product> searchWithPage(Integer catId, String name,
                                             Double minPrice, Double maxPrice,
                                             Integer pageNum, Integer pageSize) {
         String cacheKey = buildSearchKey(catId, name, minPrice, maxPrice, pageNum, pageSize);
 
-        // 1) 查 Redis
         Object cached = redisTemplate.opsForValue().get(cacheKey);
         if (cached instanceof SerializablePage) {
-            log.info("[Product#searchWithPage] ✅ Redis 缓存命中, key={}, 不执行 SQL", cacheKey);
+            log.info("[Product#searchWithPage] Redis hit, key={}", cacheKey);
             return ((SerializablePage<Product>) cached).toPageInfo();
         }
 
-        // 2) 查 MySQL
-        log.info("[Product#searchWithPage] ❌ Redis 缓存未命中, key={}, 执行 SQL", cacheKey);
+        log.info("[Product#searchWithPage] Redis miss, key={}, query MySQL", cacheKey);
         PageHelper.startPage(pageNum, pageSize);
         List<Product> list = productMapper.searchWithCondition(catId, name, minPrice, maxPrice);
         PageInfo<Product> pageInfo = new PageInfo<>(list);
 
-        // 3) 写回 Redis（用 SerializablePage 包装，避开 PageInfo 未实现 Serializable 的问题）
         redisTemplate.opsForValue().set(cacheKey, SerializablePage.of(pageInfo),
                 listTtlSeconds, TimeUnit.SECONDS);
-        log.info("[Product#searchWithPage] 已写入 Redis, key={}, ttl={}s, total={}",
-                cacheKey, listTtlSeconds, pageInfo.getTotal());
+        log.info("[Product#searchWithPage] written to Redis, key={}, total={}", cacheKey, pageInfo.getTotal());
         return pageInfo;
     }
 
     private String buildSearchKey(Integer catId, String name, Double minPrice,
                                   Double maxPrice, Integer pageNum, Integer pageSize) {
-        // 用 | 分隔的稳定 key，参数顺序固定
         String safeName = name == null ? "" : name.replace('|', '_');
         return LIST_KEY_SEARCH_PREFIX
                 + "c=" + (catId == null ? "a" : catId)
@@ -131,50 +114,41 @@ public class ProductServiceImpl implements ProductService {
                 + "|s=" + pageSize;
     }
 
-    // ===================== 写操作（保持数据强一致） =====================
+    // ===================== 写操作 =====================
 
     @Override
-    @Caching(evict = {
-            @CacheEvict(value = "product", key = "'all'"),
-            @CacheEvict(value = "product", key = "#product.id")
-    })
+    @CacheEvict(value = "product", allEntries = true)
     public boolean save(Product product) {
         int rows = productMapper.insert(product);
         evictAllProductListCache();
-        log.info("[Product#save] 写 MySQL rows={}, 已清理 Redis 列表/全量缓存", rows);
+        log.info("[Product#save] rows={}, cache evicted", rows);
         return rows > 0;
     }
 
     @Override
-    @Caching(evict = {
-            @CacheEvict(value = "product", key = "'all'"),
-            @CacheEvict(value = "product", key = "#product.id")
-    })
+    @CacheEvict(value = "product", allEntries = true)
     public boolean update(Product product) {
         int rows = productMapper.update(product);
         evictAllProductListCache();
-        log.info("[Product#update id={}] 写 MySQL rows={}, 已清理 Redis 列表/全量缓存",
-                product.getId(), rows);
+        log.info("[Product#update id={}] rows={}, cache evicted", product.getId(), rows);
         return rows > 0;
     }
 
     @Override
-    @CacheEvict(value = "product", key = "#id")
+    @CacheEvict(value = "product", allEntries = true)
     public boolean deleteById(Integer id) {
         int rows = productMapper.deleteById(id);
         evictAllProductListCache();
-        log.info("[Product#deleteById id={}] 写 MySQL rows={}, 已清理 Redis 列表/全量缓存",
-                id, rows);
+        log.info("[Product#deleteById id={}] rows={}, cache evicted", id, rows);
         return rows > 0;
     }
 
-    /** 清理所有商品相关的列表缓存（all + 所有 search:*） */
     private void evictAllProductListCache() {
         Set<String> keys = redisTemplate.keys("smartshop:list:product:*");
         if (keys != null && !keys.isEmpty()) {
             Long deleted = redisTemplate.delete(keys);
-            log.info("[Product#evictAllProductListCache] 删除 Redis keys={}, count={}",
-                    keys.stream().sorted().collect(Collectors.toList()), deleted);
+            log.info("[Product#evictAllProductListCache] deleted {} keys: {}", deleted,
+                    keys.stream().sorted().collect(Collectors.toList()));
         }
     }
 }

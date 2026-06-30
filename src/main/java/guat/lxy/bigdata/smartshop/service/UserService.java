@@ -9,7 +9,6 @@ public interface UserService {
     User findByEmail(String email);
     User findById(Integer id);
     boolean register(User user);
-    boolean resetPassword(String email, String code, String newPassword);
-    boolean updateEmail(Integer userId, String email);
+    boolean resetPassword(String email, String newPassword);
     List<Role> getUserRoles(Integer userId);
 }

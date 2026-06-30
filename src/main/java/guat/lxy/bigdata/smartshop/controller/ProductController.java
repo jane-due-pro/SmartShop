@@ -5,12 +5,14 @@ import guat.lxy.bigdata.smartshop.entity.Category;
 import guat.lxy.bigdata.smartshop.entity.Product;
 import guat.lxy.bigdata.smartshop.service.CategoryService;
 import guat.lxy.bigdata.smartshop.service.ProductService;
+import guat.lxy.bigdata.smartshop.util.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/product")
@@ -52,16 +54,8 @@ public class ProductController {
 
     @PostMapping("/add")
     @ResponseBody
-    public java.util.Map<String, Object> add(@RequestBody Product product) {
-        java.util.Map<String, Object> result = new java.util.HashMap<>();
-        if (productService.save(product)) {
-            result.put("success", true);
-            result.put("message", "添加成功");
-        } else {
-            result.put("success", false);
-            result.put("message", "添加失败");
-        }
-        return result;
+    public Map<String, Object> add(@RequestBody Product product) {
+        return Result.of(productService.save(product), "添加成功", "添加失败");
     }
 
     @GetMapping("/edit/{id}")
@@ -75,29 +69,13 @@ public class ProductController {
 
     @PostMapping("/edit")
     @ResponseBody
-    public java.util.Map<String, Object> edit(@RequestBody Product product) {
-        java.util.Map<String, Object> result = new java.util.HashMap<>();
-        if (productService.update(product)) {
-            result.put("success", true);
-            result.put("message", "修改成功");
-        } else {
-            result.put("success", false);
-            result.put("message", "修改失败");
-        }
-        return result;
+    public Map<String, Object> edit(@RequestBody Product product) {
+        return Result.of(productService.update(product), "修改成功", "修改失败");
     }
 
     @PostMapping("/delete/{id}")
     @ResponseBody
-    public java.util.Map<String, Object> delete(@PathVariable Integer id) {
-        java.util.Map<String, Object> result = new java.util.HashMap<>();
-        if (productService.deleteById(id)) {
-            result.put("success", true);
-            result.put("message", "删除成功");
-        } else {
-            result.put("success", false);
-            result.put("message", "删除失败");
-        }
-        return result;
+    public Map<String, Object> delete(@PathVariable Integer id) {
+        return Result.of(productService.deleteById(id), "删除成功", "删除失败");
     }
 }

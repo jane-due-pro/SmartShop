@@ -16,6 +16,8 @@ import java.util.List;
 @Service
 public class UserServiceImpl implements UserService {
 
+    private static final int ROLE_USER_ID = 2;
+
     @Autowired
     private UserMapper userMapper;
 
@@ -43,8 +45,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public boolean register(User user) {
-        User existing = userMapper.findByUsername(user.getUsername());
-        if (existing != null) {
+        if (userMapper.findByUsername(user.getUsername()) != null) {
             return false;
         }
         user.setActive(1);
@@ -53,7 +54,7 @@ public class UserServiceImpl implements UserService {
 
         UserRole userRole = new UserRole();
         userRole.setUserId(user.getId());
-        userRole.setRoleId(2);
+        userRole.setRoleId(ROLE_USER_ID);
         userRoleMapper.insert(userRole);
 
         return true;
@@ -61,22 +62,12 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public boolean resetPassword(String email, String code, String newPassword) {
+    public boolean resetPassword(String email, String newPassword) {
         User user = userMapper.findByEmail(email);
         if (user == null) {
             return false;
         }
         userMapper.updatePassword(user.getUsername(), "{noop}" + newPassword);
-        return true;
-    }
-
-    @Override
-    public boolean updateEmail(Integer userId, String email) {
-        User existing = userMapper.findByEmail(email);
-        if (existing != null) {
-            return false;
-        }
-        userMapper.updateEmail(userId, email);
         return true;
     }
 

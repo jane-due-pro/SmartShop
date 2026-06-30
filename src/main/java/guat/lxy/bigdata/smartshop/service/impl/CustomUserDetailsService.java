@@ -2,7 +2,6 @@ package guat.lxy.bigdata.smartshop.service.impl;
 
 import guat.lxy.bigdata.smartshop.entity.Role;
 import guat.lxy.bigdata.smartshop.entity.User;
-import guat.lxy.bigdata.smartshop.service.EmailService;
 import guat.lxy.bigdata.smartshop.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -20,9 +19,6 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Autowired
     private UserService userService;
 
-    @Autowired
-    private EmailService emailService;
-
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userService.findByUsername(username);
@@ -34,8 +30,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         }
 
         List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-        List<Role> roles = userService.getUserRoles(user.getId());
-        for (Role role : roles) {
+        for (Role role : userService.getUserRoles(user.getId())) {
             authorities.add(new SimpleGrantedAuthority(role.getRole()));
         }
 

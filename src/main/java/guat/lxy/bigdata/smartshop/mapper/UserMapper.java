@@ -21,7 +21,4 @@ public interface UserMapper {
 
     @Update("UPDATE t_user SET password = #{password} WHERE username = #{username}")
     int updatePassword(@Param("username") String username, @Param("password") String password);
-
-    @Update("UPDATE t_user SET email = #{email} WHERE id = #{id}")
-    int updateEmail(@Param("id") Integer id, @Param("email") String email);
 }

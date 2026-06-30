@@ -62,9 +62,11 @@ public class EmailService {
             helper.setSubject(subject);
             helper.setText(content, true);
             mailSender.send(message);
-            System.out.println(">>> 验证码已发送到: " + toEmail + ", code=" + code);
+            log.info("[EmailService] 验证码邮件发送成功, email={}", toEmail);
         } catch (Exception e) {
-            log.error("[EmailService] 发送邮件失败, email={}", toEmail, e);
+            // 邮件发送失败时清理掉 Redis 里已存的验证码，避免用户输入后永远校验失败
+            redisTemplate.delete(CODE_KEY_PREFIX + toEmail);
+            log.error("[EmailService] 发送邮件失败, email={}, 已清理 Redis 验证码", toEmail, e);
         }
     }
 
@@ -98,7 +100,7 @@ public class EmailService {
         String typeName = (type != null) ? type : "验证码";
         return """
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+                <div style="background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
                     <h1 style="color: white; margin: 0; font-size: 24px;">SmartShop</h1>
                 </div>
                 <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">

@@ -3,11 +3,11 @@ package guat.lxy.bigdata.smartshop.controller;
 import guat.lxy.bigdata.smartshop.entity.User;
 import guat.lxy.bigdata.smartshop.service.EmailService;
 import guat.lxy.bigdata.smartshop.service.UserService;
+import guat.lxy.bigdata.smartshop.util.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.Map;
 
 @Controller
@@ -37,16 +37,12 @@ public class AuthController {
     @PostMapping("/sendCode")
     @ResponseBody
     public Map<String, Object> sendCode(@RequestParam String email, @RequestParam String type) {
-        Map<String, Object> result = new HashMap<>();
         try {
             emailService.sendVerificationCode(email, type);
-            result.put("success", true);
-            result.put("message", "验证码已发送到 " + email);
+            return Result.success("验证码已发送到 " + email);
         } catch (Exception e) {
-            result.put("success", false);
-            result.put("message", "发送失败: " + e.getMessage());
+            return Result.fail("发送失败: " + e.getMessage());
         }
-        return result;
     }
 
     @PostMapping("/doRegister")
@@ -55,12 +51,8 @@ public class AuthController {
                                           @RequestParam String password,
                                           @RequestParam String email,
                                           @RequestParam String code) {
-        Map<String, Object> result = new HashMap<>();
-
         if (!emailService.verifyCode(email, code)) {
-            result.put("success", false);
-            result.put("message", "验证码错误或已过期");
-            return result;
+            return Result.fail("验证码错误或已过期");
         }
 
         User user = new User();
@@ -68,14 +60,9 @@ public class AuthController {
         user.setPassword(password);
         user.setEmail(email);
 
-        if (userService.register(user)) {
-            result.put("success", true);
-            result.put("message", "注册成功，请登录");
-        } else {
-            result.put("success", false);
-            result.put("message", "用户名已存在");
-        }
-        return result;
+        return userService.register(user)
+                ? Result.success("注册成功，请登录")
+                : Result.fail("用户名已存在");
     }
 
     @PostMapping("/doResetPassword")
@@ -83,21 +70,12 @@ public class AuthController {
     public Map<String, Object> doResetPassword(@RequestParam String email,
                                                 @RequestParam String code,
                                                 @RequestParam String newPassword) {
-        Map<String, Object> result = new HashMap<>();
-
         if (!emailService.verifyCode(email, code)) {
-            result.put("success", false);
-            result.put("message", "验证码错误或已过期");
-            return result;
+            return Result.fail("验证码错误或已过期");
         }
 
-        if (userService.resetPassword(email, code, newPassword)) {
-            result.put("success", true);
-            result.put("message", "密码重置成功，请重新登录");
-        } else {
-            result.put("success", false);
-            result.put("message", "该邮箱未注册");
-        }
-        return result;
+        return userService.resetPassword(email, newPassword)
+                ? Result.success("密码重置成功，请重新登录")
+                : Result.fail("该邮箱未注册");
     }
 }
