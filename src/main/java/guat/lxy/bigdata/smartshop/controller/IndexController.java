@@ -31,8 +31,9 @@ public class IndexController {
 
     @GetMapping("/welcome")
     public String welcome(Model model) {
-        List<Category> categories = categoryService.findAll();
-        List<Product> products = productService.findAll();
+        // 走编程式 Redis 缓存：第一次查 MySQL + 写 Redis，后续命中 Redis 不再走 SQL
+        List<Category> categories = categoryService.findAllWithCache();
+        List<Product> products = productService.findAllWithCache();
         model.addAttribute("categories", categories);
         model.addAttribute("products", products);
         return "Welcome";

@@ -1,41 +1,55 @@
 package guat.lxy.bigdata.smartshop.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import jakarta.mail.internet.MimeMessage;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
+/**
+ * 邮件验证码服务
+ *
+ * 验证码存储从原 ConcurrentHashMap 改为 Redis，TTL 5 分钟：
+ * - 重启服务验证码仍然有效
+ * - 多实例部署时验证码共享
+ * - 自动过期，无需手动清理
+ *
+ * Redis key: smartshop:verify:code:{email}
+ */
 @Service
 public class EmailService {
+
+    private static final Logger log = LoggerFactory.getLogger(EmailService.class);
+
+    private static final String CODE_KEY_PREFIX = "smartshop:verify:code:";
 
     @Autowired
     private JavaMailSender mailSender;
 
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
+
     @Value("${spring.mail.username}")
     private String fromEmail;
 
-    // 内存存储验证码: email -> code
-    private final ConcurrentHashMap<String, String> codeCache = new ConcurrentHashMap<>();
-    // 过期时间: email -> expireTime
-    private final ConcurrentHashMap<String, Date> expireCache = new ConcurrentHashMap<>();
+    @Value("${smartshop.cache.ttl.verification-code}")
+    private long codeTtlSeconds;
 
     @Async
     public void sendVerificationCode(String toEmail, String type) {
         String code = generateCode();
 
-        // 存储验证码，5分钟有效
-        codeCache.put(toEmail, code);
-        Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.MINUTE, 5);
-        expireCache.put(toEmail, cal.getTime());
+        // 存 Redis，5 分钟过期
+        redisTemplate.opsForValue().set(CODE_KEY_PREFIX + toEmail, code, codeTtlSeconds, TimeUnit.SECONDS);
+        log.info("[EmailService] 验证码已生成并写入 Redis, email={}, ttl={}s", toEmail, codeTtlSeconds);
 
         String subject = "SmartShop - " + (type != null ? type : "验证码");
         String content = buildEmailContent(code, type);
@@ -50,32 +64,24 @@ public class EmailService {
             mailSender.send(message);
             System.out.println(">>> 验证码已发送到: " + toEmail + ", code=" + code);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("[EmailService] 发送邮件失败, email={}", toEmail, e);
         }
     }
 
     public boolean verifyCode(String email, String code) {
-        String cachedCode = codeCache.get(email);
-        Date expireTime = expireCache.get(email);
-
-        if (cachedCode == null || expireTime == null) {
+        String key = CODE_KEY_PREFIX + email;
+        Object cachedCode = redisTemplate.opsForValue().get(key);
+        if (cachedCode == null) {
+            log.info("[EmailService] verifyCode 失败：验证码不存在或已过期, email={}", email);
             return false;
         }
-
-        // 检查是否过期
-        if (new Date().after(expireTime)) {
-            codeCache.remove(email);
-            expireCache.remove(email);
-            return false;
-        }
-
-        // 验证成功，删除验证码
-        if (cachedCode.equals(code)) {
-            codeCache.remove(email);
-            expireCache.remove(email);
+        if (cachedCode.toString().equals(code)) {
+            redisTemplate.delete(key); // 一次性使用
+            log.info("[EmailService] verifyCode 成功, email={}", email);
             return true;
         }
-
+        log.info("[EmailService] verifyCode 失败：验证码不匹配, email={}, expected={}, got={}",
+                email, cachedCode, code);
         return false;
     }
 
