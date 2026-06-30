@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartShop - 登录</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .login-container { background: white; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); padding: 40px; width: 420px; }
+        .login-header { text-align: center; margin-bottom: 30px; }
+        .login-header h1 { color: #333; font-size: 28px; margin-bottom: 8px; }
+        .login-header p { color: #666; font-size: 14px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 6px; color: #555; font-size: 14px; font-weight: 500; }
+        .form-group input { width: 100%; padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 15px; transition: border-color 0.3s; }
+        .form-group input:focus { outline: none; border-color: #667eea; }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4); }
+        .links { text-align: center; margin-top: 20px; }
+        .links a { color: #667eea; text-decoration: none; font-size: 14px; margin: 0 10px; }
+        .links a:hover { text-decoration: underline; }
+        .alert { padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; }
+        .alert-error { background: #fee; color: #c33; border: 1px solid #fcc; }
+        .alert-success { background: #efe; color: #363; border: 1px solid #cfc; }
+        .tab-container { margin-bottom: 20px; }
+        .tabs { display: flex; border-bottom: 2px solid #e0e0e0; }
+        .tab { flex: 1; padding: 12px; text-align: center; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.3s; }
+        .tab.active { border-bottom-color: #667eea; color: #667eea; font-weight: 600; }
+        .tab-content { display: none; padding-top: 20px; }
+        .tab-content.active { display: block; }
+        .code-group { display: flex; gap: 10px; }
+        .code-group input { flex: 1; }
+        .btn-code { white-space: nowrap; padding: 12px 16px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; }
+        .btn-code:disabled { background: #ccc; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>SmartShop</h1>
+            <p>智能商城管理系统</p>
+        </div>
+
+        <div th:if="${param.error}" class="alert alert-error">
+            用户名或密码错误，请重试
+        </div>
+        <div th:if="${param.logout}" class="alert alert-success">
+            已成功退出登录
+        </div>
+
+        <div class="tab-container">
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('password')">密码登录</div>
+                <div class="tab" onclick="switchTab('email')">邮箱验证码登录</div>
+            </div>
+
+            <div id="password-tab" class="tab-content active">
+                <form th:action="@{/doLogin}" method="post">
+                    <div class="form-group">
+                        <label>用户名</label>
+                        <input type="text" name="username" placeholder="请输入用户名" required>
+                    </div>
+                    <div class="form-group">
+                        <label>密码</label>
+                        <input type="password" name="password" placeholder="请输入密码" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">登 录</button>
+                </form>
+            </div>
+
+            <div id="email-tab" class="tab-content">
+                <div class="form-group">
+                    <label>邮箱地址</label>
+                    <input type="email" id="emailLogin" placeholder="请输入邮箱">
+                </div>
+                <div class="form-group">
+                    <label>验证码</label>
+                    <div class="code-group">
+                        <input type="text" id="emailCode" placeholder="请输入6位验证码">
+                        <button class="btn-code" id="sendEmailCode" onclick="sendCode('emailLogin', '邮箱登录验证码')">获取验证码</button>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="emailLogin()">登 录</button>
+            </div>
+        </div>
+
+        <div class="links">
+            <a th:href="@{/register}">注册账号</a>
+            <a th:href="@{/resetPassword}">找回密码</a>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(type) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            if (type === 'password') {
+                document.querySelectorAll('.tab')[0].classList.add('active');
+                document.getElementById('password-tab').classList.add('active');
+            } else {
+                document.querySelectorAll('.tab')[1].classList.add('active');
+                document.getElementById('email-tab').classList.add('active');
+            }
+        }
+
+        let countdown = 0;
+        function sendCode(inputId, type) {
+            const email = document.getElementById(inputId).value;
+            if (!email) { alert('请输入邮箱地址'); return; }
+            const btn = document.getElementById('sendEmailCode');
+            btn.disabled = true;
+            fetch('/sendCode', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'email=' + encodeURIComponent(email) + '&type=' + encodeURIComponent(type)
+            })
+            .then(r => r.json())
+            .then(data => {
+                alert(data.message);
+                if (data.success) {
+                    countdown = 60;
+                    const timer = setInterval(() => {
+                        countdown--;
+                        btn.textContent = countdown + 's';
+                        if (countdown <= 0) { clearInterval(timer); btn.textContent = '获取验证码'; btn.disabled = false; }
+                    }, 1000);
+                } else { btn.disabled = false; }
+            })
+            .catch(() => { alert('发送失败'); btn.disabled = false; });
+        }
+
+        function emailLogin() {
+            const email = document.getElementById('emailLogin').value;
+            const code = document.getElementById('emailCode').value;
+            if (!email || !code) { alert('请填写完整信息'); return; }
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/doLogin';
+            const u = document.createElement('input'); u.name='username'; u.value=email+'__email_code__'+code; form.appendChild(u);
+            const p = document.createElement('input'); p.name='password'; p.value='__email_code__'; form.appendChild(p);
+            document.body.appendChild(form); form.submit();
+        }
+    </script>
+</body>
+</html>

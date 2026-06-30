@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>添加商品</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .page-header { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+        .page-header h2 { color: #333; font-size: 20px; }
+        .form-container { background: white; border-radius: 12px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #555; font-size: 14px; font-weight: 500; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+        .form-group textarea { min-height: 100px; resize: vertical; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #667eea; }
+        .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 30px; }
+        .btn { padding: 12px 24px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; text-decoration: none; }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5a6fd6; }
+        .btn-secondary { background: #95a5a6; color: white; }
+        .btn-secondary:hover { background: #7f8c8d; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h2>添加商品</h2>
+        </div>
+
+        <div class="form-container">
+            <div class="form-group">
+                <label>商品名称 *</label>
+                <input type="text" id="name" placeholder="请输入商品名称" required>
+            </div>
+            <div class="form-group">
+                <label>商品分类 *</label>
+                <select id="catId" required>
+                    <option value="">请选择分类</option>
+                    <option th:each="cat : ${categories}" th:value="${cat.id}" th:text="${cat.name}"></option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>价格 *</label>
+                <input type="number" id="price" placeholder="请输入价格" step="0.01" min="0" required>
+            </div>
+            <div class="form-group">
+                <label>图片URL</label>
+                <input type="text" id="photoUrl" placeholder="请输入图片地址">
+            </div>
+            <div class="form-group">
+                <label>商品描述</label>
+                <textarea id="descp" placeholder="请输入商品描述"></textarea>
+            </div>
+            <div class="form-group">
+                <label>发布日期</label>
+                <input type="date" id="releaseDate">
+            </div>
+            <div class="form-actions">
+                <a th:href="@{/product/list}" class="btn btn-secondary">取消</a>
+                <button class="btn btn-primary" onclick="doAdd()">添加</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function doAdd() {
+            const name = document.getElementById('name').value;
+            const catId = document.getElementById('catId').value;
+            const price = document.getElementById('price').value;
+            const photoUrl = document.getElementById('photoUrl').value;
+            const descp = document.getElementById('descp').value;
+            const releaseDate = document.getElementById('releaseDate').value;
+
+            if (!name || !catId || !price) { alert('请填写必填项'); return; }
+
+            const data = {
+                name: name,
+                catId: parseInt(catId),
+                price: parseFloat(price),
+                photoUrl: photoUrl || '/img/default.jpg',
+                descp: descp,
+                releaseDate: releaseDate || new Date().toISOString().split('T')[0]
+            };
+
+            fetch('/product/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(r => r.json())
+            .then(result => {
+                alert(result.message);
+                if (result.success) { window.location.href = '/product/list'; }
+            })
+            .catch(() => alert('添加失败'));
+        }
+    </script>
+</body>
+</html>

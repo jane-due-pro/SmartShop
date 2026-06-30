@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartShop 智能商城</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0 20px; height: 60px; display: flex; align-items: center; justify-content: space-between; position: fixed; top: 0; left: 0; right: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        .header h1 { font-size: 22px; font-weight: 600; }
+        .header .user-info { display: flex; align-items: center; gap: 15px; }
+        .header .user-info span { font-size: 14px; }
+        .header .logout-btn { background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 6px 16px; border-radius: 6px; cursor: pointer; text-decoration: none; font-size: 13px; transition: background 0.3s; }
+        .header .logout-btn:hover { background: rgba(255,255,255,0.3); }
+        .sidebar { position: fixed; top: 60px; left: 0; bottom: 0; width: 220px; background: #2c3e50; overflow-y: auto; }
+        .sidebar ul { list-style: none; padding: 10px 0; }
+        .sidebar ul li a { display: block; padding: 14px 24px; color: #bdc3c7; text-decoration: none; font-size: 14px; transition: all 0.3s; border-left: 3px solid transparent; }
+        .sidebar ul li a:hover, .sidebar ul li a.active { background: #34495e; color: white; border-left-color: #667eea; }
+        .sidebar ul li a .icon { margin-right: 10px; font-size: 16px; }
+        .sidebar .menu-title { padding: 16px 24px 8px; color: #7f8c8d; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+        .content { position: fixed; top: 60px; left: 220px; right: 0; bottom: 0; }
+        .content iframe { width: 100%; height: 100%; border: none; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>SmartShop</h1>
+        <div class="user-info">
+            <span>欢迎, <strong th:text="${username}">用户</strong></span>
+            <a th:href="@{/logout}" class="logout-btn">退出登录</a>
+        </div>
+    </div>
+
+    <div class="sidebar">
+        <ul>
+            <li class="menu-title">导航菜单</li>
+            <li><a th:href="@{/welcome}" target="mainFrame" class="active"><span class="icon">🏠</span>系统首页</a></li>
+            <li><a th:href="@{/product/list}" target="mainFrame"><span class="icon">📦</span>商品管理</a></li>
+            <li sec:authorize="hasRole('admin')"><a th:href="@{/category/list}" target="mainFrame"><span class="icon">📁</span>分类管理</a></li>
+            <li class="menu-title">系统</li>
+            <li><a href="#" onclick="document.getElementById('mainFrame').src='/welcome'"><span class="icon">ℹ️</span>关于系统</a></li>
+        </ul>
+    </div>
+
+    <div class="content">
+        <iframe name="mainFrame" id="mainFrame" th:src="@{/welcome}"></iframe>
+    </div>
+
+    <script>
+        document.querySelectorAll('.sidebar a').forEach(link => {
+            link.addEventListener('click', function() {
+                document.querySelectorAll('.sidebar a').forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>
