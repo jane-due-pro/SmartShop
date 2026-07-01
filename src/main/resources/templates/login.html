@@ -461,6 +461,24 @@
     </div>
 
     <script>
+        // Toast Notification System
+        function showToast(message, type = 'info') {
+            const container = document.querySelector('.toast-container') || createToastContainer();
+            const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<span class="toast-icon">${icons[type]}</span><span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function createToastContainer() {
+            const container = document.createElement('div');
+            container.className = 'toast-container';
+            document.body.appendChild(container);
+            return container;
+        }
+
         // Toggle Password Visibility
         function togglePassword() {
             const passwordInput = document.getElementById('password');
@@ -489,7 +507,7 @@
         function sendCode() {
             const email = document.getElementById('emailLogin').value;
             if (!email) { 
-                alert('请输入邮箱地址'); 
+                showToast('请输入邮箱地址', 'warning');
                 return; 
             }
             const btn = document.getElementById('sendEmailCode');
@@ -501,7 +519,7 @@
             })
             .then(r => r.json())
             .then(data => {
-                alert(data.message);
+                showToast(data.message, data.success ? 'success' : 'error');
                 if (data.success) {
                     countdown = 60;
                     const timer = setInterval(() => {
@@ -518,7 +536,7 @@
                 }
             })
             .catch(() => { 
-                alert('请求失败'); 
+                showToast('请求失败', 'error');
                 btn.disabled = false; 
             });
         }
@@ -528,7 +546,7 @@
             const email = document.getElementById('emailLogin').value;
             const code = document.getElementById('emailCode').value;
             if (!email || !code) { 
-                alert('请填写完整信息'); 
+                showToast('请填写完整信息', 'warning');
                 return; 
             }
             const form = document.createElement('form');

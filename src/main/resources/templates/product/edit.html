@@ -283,6 +283,24 @@
     </div>
 
     <script>
+        // Toast Notification System
+        function showToast(message, type = 'info') {
+            const container = document.querySelector('.toast-container') || createToastContainer();
+            const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<span class="toast-icon">${icons[type]}</span><span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function createToastContainer() {
+            const container = document.createElement('div');
+            container.className = 'toast-container';
+            document.body.appendChild(container);
+            return container;
+        }
+
         // Edit Product
         function doEdit() {
             const id = document.getElementById('id').value;
@@ -294,7 +312,7 @@
             const releaseDate = document.getElementById('releaseDate').value;
 
             if (!name || !catId || !price) { 
-                alert('请填写必填项'); 
+                showToast('请填写必填项', 'warning');
                 return; 
             }
 
@@ -315,12 +333,12 @@
             })
             .then(r => r.json())
             .then(result => {
-                alert(result.message);
+                showToast(result.message, result.success ? 'success' : 'error');
                 if (result.success) { 
                     window.location.href = '/product/list'; 
                 }
             })
-            .catch(() => alert('保存失败'));
+            .catch(() => showToast('保存失败', 'error'));
         }
     </script>
 </body>
