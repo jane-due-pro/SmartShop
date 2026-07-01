@@ -604,7 +604,7 @@
                     <h2 class="section-title">快速操作</h2>
                 </div>
                 <div class="actions-list">
-                    <a th:href="@{/product/add}" class="action-item">
+                    <a th:href="@{/product/add}" class="action-item" sec:authorize="hasRole('admin')">
                         <div class="action-icon primary">➕</div>
                         <div class="action-content">
                             <div class="action-title">添加商品</div>
@@ -612,7 +612,7 @@
                         </div>
                         <div class="action-arrow">→</div>
                     </a>
-                    <a th:href="@{/category/list}" class="action-item">
+                    <a th:href="@{/category/list}" class="action-item" sec:authorize="hasRole('admin')">
                         <div class="action-icon accent">📁</div>
                         <div class="action-content">
                             <div class="action-title">管理分类</div>

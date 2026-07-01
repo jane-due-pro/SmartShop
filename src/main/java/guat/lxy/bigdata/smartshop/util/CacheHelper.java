@@ -37,6 +37,7 @@ public class CacheHelper {
         Object cached = redisTemplate.opsForValue().get(key);
         if (cached != null) {
             log.info("✅ [CACHE HIT]  key={}", key);
+            System.out.println("命中redis缓存");
             return (T) cached;
         }
         log.info("🔍 [CACHE MISS] key={}, loading from DB...", key);
@@ -55,6 +56,7 @@ public class CacheHelper {
         Object cached = redisTemplate.opsForValue().get(key);
         if (cached instanceof SerializablePage) {
             log.info("✅ [CACHE HIT]  key={}", key);
+            System.out.println("命中redis缓存");
             return ((SerializablePage<T>) cached).toPageInfo();
         }
         log.info("🔍 [CACHE MISS] key={}, loading from DB...", key);

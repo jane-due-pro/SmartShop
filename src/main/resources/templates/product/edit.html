@@ -284,14 +284,14 @@
 
     <script>
         // Toast Notification System
-        function showToast(message, type = 'info') {
+        function showToast(message, type) {
             const container = document.querySelector('.toast-container') || createToastContainer();
             const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
             const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.innerHTML = `<span class="toast-icon">${icons[type]}</span><span>${message}</span>`;
+            toast.className = `toast ${type || 'info'}`;
+            toast.innerHTML = `<span class="toast-icon">${icons[type || 'info']}</span><span>${message}</span>`;
             container.appendChild(toast);
-            setTimeout(() => toast.remove(), 5000);
+            setTimeout(() => toast.remove(), 2500);
         }
 
         function createToastContainer() {
@@ -300,6 +300,24 @@
             document.body.appendChild(container);
             return container;
         }
+
+        // Save message before redirect
+        function showToastAndRedirect(message, type, url) {
+            sessionStorage.setItem('toastMessage', message);
+            sessionStorage.setItem('toastType', type || 'info');
+            window.location.href = url;
+        }
+
+        // Show saved message on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            const message = sessionStorage.getItem('toastMessage');
+            const type = sessionStorage.getItem('toastType');
+            if (message) {
+                showToast(message, type);
+                sessionStorage.removeItem('toastMessage');
+                sessionStorage.removeItem('toastType');
+            }
+        });
 
         // Edit Product
         function doEdit() {
@@ -333,10 +351,7 @@
             })
             .then(r => r.json())
             .then(result => {
-                showToast(result.message, result.success ? 'success' : 'error');
-                if (result.success) { 
-                    window.location.href = '/product/list'; 
-                }
+                showToastAndRedirect(result.message, result.success ? 'success' : 'error', '/product/list');
             })
             .catch(() => showToast('保存失败', 'error'));
         }

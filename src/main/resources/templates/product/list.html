@@ -404,13 +404,16 @@
 <body>
     <div class="page-container animate-fadeIn">
         <!-- Page Header -->
-        <div class="page-header">
+        <div class="page-header" sec:authorize="hasRole('admin')">
             <h1 class="page-title">商品管理</h1>
             <div class="page-actions">
                 <a th:href="@{/product/add}" class="btn btn-primary">
                     <span>➕</span> 添加商品
                 </a>
             </div>
+        </div>
+        <div class="page-header" sec:authorize="!hasRole('admin')">
+            <h1 class="page-title">商品列表</h1>
         </div>
 
         <!-- Search Form -->
@@ -471,7 +474,7 @@
                             <th>价格</th>
                             <th>描述</th>
                             <th>发布日期</th>
-                            <th>操作</th>
+                            <th sec:authorize="hasRole('admin')">操作</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -490,15 +493,22 @@
                             <td>
                                 <span class="product-date" th:text="${#dates.format(product.releaseDate, 'yyyy-MM-dd')}">2024-01-01</span>
                             </td>
-                            <td>
-                                <div class="product-actions">
+                            <td sec:authorize="hasRole('admin')">
+                                <div class="product-actions" sec:authorize="hasRole('admin')">
                                     <a th:href="@{/product/edit/{id}(id=${product.id})}" class="btn-icon" title="编辑">✏️</a>
                                     <button class="btn-icon danger" title="删除" th:onclick="'deleteProduct(' + ${product.id} + ')'">🗑️</button>
                                 </div>
                             </td>
                         </tr>
                         <tr th:if="${#lists.isEmpty(pageInfo.list)}">
-                            <td colspan="7">
+                            <td colspan="6" sec:authorize="!hasRole('admin')">
+                                <div class="empty-state">
+                                    <div class="empty-icon">📦</div>
+                                    <h3 class="empty-title">暂无商品数据</h3>
+                                    <p class="empty-description">暂无商品信息</p>
+                                </div>
+                            </td>
+                            <td colspan="7" sec:authorize="hasRole('admin')">
                                 <div class="empty-state">
                                     <div class="empty-icon">📦</div>
                                     <h3 class="empty-title">暂无商品数据</h3>
@@ -528,14 +538,14 @@
 
     <script>
         // Toast Notification System
-        function showToast(message, type = 'info') {
+        function showToast(message, type) {
             const container = document.querySelector('.toast-container') || createToastContainer();
             const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
             const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.innerHTML = `<span class="toast-icon">${icons[type]}</span><span>${message}</span>`;
+            toast.className = `toast ${type || 'info'}`;
+            toast.innerHTML = `<span class="toast-icon">${icons[type || 'info']}</span><span>${message}</span>`;
             container.appendChild(toast);
-            setTimeout(() => toast.remove(), 5000);
+            setTimeout(() => toast.remove(), 2500);
         }
 
         function createToastContainer() {
@@ -544,6 +554,30 @@
             document.body.appendChild(container);
             return container;
         }
+
+        // Save message before redirect or reload
+        function showToastAndRedirect(message, type, url) {
+            sessionStorage.setItem('toastMessage', message);
+            sessionStorage.setItem('toastType', type || 'info');
+            window.location.href = url;
+        }
+
+        function showToastAndReload(message, type) {
+            sessionStorage.setItem('toastMessage', message);
+            sessionStorage.setItem('toastType', type || 'info');
+            location.reload();
+        }
+
+        // Show saved message on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            const message = sessionStorage.getItem('toastMessage');
+            const type = sessionStorage.getItem('toastType');
+            if (message) {
+                showToast(message, type);
+                sessionStorage.removeItem('toastMessage');
+                sessionStorage.removeItem('toastType');
+            }
+        });
 
         // Custom Confirm Modal
         function showConfirm(message, callback) {
@@ -589,9 +623,10 @@
                 fetch('/product/delete/' + id, { method: 'POST' })
                     .then(r => r.json())
                     .then(data => {
-                        showToast(data.message, data.success ? 'success' : 'error');
-                        if (data.success) { 
-                            location.reload(); 
+                        if (data.success) {
+                            showToastAndReload(data.message, 'success');
+                        } else {
+                            showToast(data.message, 'error');
                         }
                     })
                     .catch(() => showToast('删除失败', 'error'));

@@ -590,7 +590,8 @@
                     <div class="user-avatar" th:text="${username.substring(0, 1).toUpperCase()}">U</div>
                     <div class="user-info">
                         <div class="user-name" th:text="${username}">用户</div>
-                        <div class="user-role">管理员</div>
+                        <div class="user-role" sec:authorize="hasRole('admin')">管理员</div>
+                        <div class="user-role" sec:authorize="!hasRole('admin')">普通用户</div>
                     </div>
                     <a th:href="@{/logout}" class="logout-btn tooltip" data-tooltip="退出登录">
                         <span>🚪</span>

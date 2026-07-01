@@ -51,7 +51,9 @@ public class SecurityConfig {
                     "/sendCode", "/doRegister", "/doResetPassword",
                     "/css/**", "/js/**", "/img/**", "/favicon.ico"
                 ).permitAll()
-                .requestMatchers("/welcome", "/index", "/", "/product/**", "/category/**").authenticated()
+                .requestMatchers("/welcome", "/index", "/", "/product/list", "/category/list").authenticated()
+                .requestMatchers("/product/add", "/product/edit/**", "/product/delete/**").hasRole("admin")
+                .requestMatchers("/category/add", "/category/edit/**", "/category/delete/**").hasRole("admin")
                 .requestMatchers("/admin/**").hasRole("admin")
                 .anyRequest().authenticated()
             )

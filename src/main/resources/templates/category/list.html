@@ -292,13 +292,16 @@
 <body>
     <div class="page-container animate-fadeIn">
         <!-- Page Header -->
-        <div class="page-header">
+        <div class="page-header" sec:authorize="hasRole('admin')">
             <h1 class="page-title">分类管理</h1>
             <div class="page-actions">
                 <a th:href="@{/category/add}" class="btn btn-primary">
                     <span>➕</span> 添加分类
                 </a>
             </div>
+        </div>
+        <div class="page-header" sec:authorize="!hasRole('admin')">
+            <h1 class="page-title">分类列表</h1>
         </div>
 
         <!-- Stats Row -->
@@ -346,7 +349,7 @@
                                 <span class="category-description" th:text="${cat.descp}">描述</span>
                             </td>
                             <td>
-                                <div class="category-actions">
+                                <div class="category-actions" sec:authorize="hasRole('admin')">
                                     <a th:href="@{/category/edit/{id}(id=${cat.id})}" class="btn-icon" title="编辑">✏️</a>
                                     <button class="btn-icon danger" title="删除" th:onclick="'deleteCategory(' + ${cat.id} + ')'">🗑️</button>
                                 </div>
@@ -369,14 +372,14 @@
 
     <script>
         // Toast Notification System
-        function showToast(message, type = 'info') {
+        function showToast(message, type) {
             const container = document.querySelector('.toast-container') || createToastContainer();
             const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
             const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.innerHTML = `<span class="toast-icon">${icons[type]}</span><span>${message}</span>`;
+            toast.className = `toast ${type || 'info'}`;
+            toast.innerHTML = `<span class="toast-icon">${icons[type || 'info']}</span><span>${message}</span>`;
             container.appendChild(toast);
-            setTimeout(() => toast.remove(), 5000);
+            setTimeout(() => toast.remove(), 2500);
         }
 
         function createToastContainer() {
@@ -385,6 +388,30 @@
             document.body.appendChild(container);
             return container;
         }
+
+        // Save message before redirect or reload
+        function showToastAndRedirect(message, type, url) {
+            sessionStorage.setItem('toastMessage', message);
+            sessionStorage.setItem('toastType', type || 'info');
+            window.location.href = url;
+        }
+
+        function showToastAndReload(message, type) {
+            sessionStorage.setItem('toastMessage', message);
+            sessionStorage.setItem('toastType', type || 'info');
+            location.reload();
+        }
+
+        // Show saved message on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            const message = sessionStorage.getItem('toastMessage');
+            const type = sessionStorage.getItem('toastType');
+            if (message) {
+                showToast(message, type);
+                sessionStorage.removeItem('toastMessage');
+                sessionStorage.removeItem('toastType');
+            }
+        });
 
         // Custom Confirm Modal
         function showConfirm(message, callback) {
@@ -417,9 +444,10 @@
                 fetch('/category/delete/' + id, { method: 'POST' })
                     .then(r => r.json())
                     .then(data => {
-                        showToast(data.message, data.success ? 'success' : 'error');
-                        if (data.success) { 
-                            location.reload(); 
+                        if (data.success) {
+                            showToastAndReload(data.message, 'success');
+                        } else {
+                            showToast(data.message, 'error');
                         }
                     })
                     .catch(() => showToast('删除失败', 'error'));
