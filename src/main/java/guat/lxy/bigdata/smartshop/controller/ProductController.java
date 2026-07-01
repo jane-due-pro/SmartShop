@@ -3,14 +3,18 @@ package guat.lxy.bigdata.smartshop.controller;
 import com.github.pagehelper.PageInfo;
 import guat.lxy.bigdata.smartshop.entity.Category;
 import guat.lxy.bigdata.smartshop.entity.Product;
+import guat.lxy.bigdata.smartshop.entity.User;
 import guat.lxy.bigdata.smartshop.service.CategoryService;
+import guat.lxy.bigdata.smartshop.service.ProductCommentService;
 import guat.lxy.bigdata.smartshop.service.ProductService;
+import guat.lxy.bigdata.smartshop.service.UserService;
 import guat.lxy.bigdata.smartshop.util.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 
@@ -23,6 +27,12 @@ public class ProductController {
 
     @Autowired
     private CategoryService categoryService;
+
+    @Autowired
+    private ProductCommentService commentService;
+
+    @Autowired
+    private UserService userService;
 
     @GetMapping("/list")
     public String list(@RequestParam(defaultValue = "1") Integer pageNum,
@@ -43,6 +53,23 @@ public class ProductController {
         model.addAttribute("maxPrice", maxPrice);
 
         return "product/list";
+    }
+
+    @GetMapping("/detail/{id}")
+    public String detail(@PathVariable Integer id, Model model, Principal principal) {
+        Product product = productService.findById(id);
+        var comments = commentService.findByProductId(id);
+        User user = userService.findByUsername(principal.getName());
+        commentService.fillLikeInfo(comments, user.getId());
+        boolean isAdmin = userService.getUserRoles(user.getId())
+                .stream().anyMatch(r -> r.getRole().equals("ROLE_admin"));
+        model.addAttribute("product", product);
+        model.addAttribute("comments", comments);
+        model.addAttribute("commentCount", commentService.countByProductId(id));
+        model.addAttribute("avgRating", commentService.avgRatingByProductId(id));
+        model.addAttribute("currentUsername", principal.getName());
+        model.addAttribute("isAdmin", isAdmin);
+        return "product/detail";
     }
 
     @GetMapping("/add")

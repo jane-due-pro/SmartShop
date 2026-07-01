@@ -481,7 +481,7 @@
                         <tr th:each="product : ${pageInfo.list}">
                             <td th:text="${product.id}">1</td>
                             <td>
-                                <span class="product-name" th:text="${product.name}">商品名称</span>
+                                <a class="product-name" th:href="@{/product/detail/{id}(id=${product.id})}" th:text="${product.name}">商品名称</a>
                             </td>
                             <td>
                                 <span class="product-category" th:text="${product.categoryName}">分类</span>
