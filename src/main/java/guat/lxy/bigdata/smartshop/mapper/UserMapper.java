@@ -9,9 +9,6 @@ public interface UserMapper {
     @Select("SELECT * FROM t_user WHERE username = #{username}")
     User findByUsername(@Param("username") String username);
 
-    @Select("SELECT * FROM t_user WHERE id = #{id}")
-    User findById(@Param("id") Integer id);
-
     @Select("SELECT * FROM t_user WHERE email = #{email}")
     User findByEmail(@Param("email") String email);
 

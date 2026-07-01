@@ -24,9 +24,6 @@ public interface ProductMapper {
     """)
     Product findByIdWithCategory(@Param("id") Integer id);
 
-    @Select("SELECT * FROM product WHERE id = #{id}")
-    Product findById(@Param("id") Integer id);
-
     @Insert("INSERT INTO product(name, photo_url, price, descp, release_date, cat_id) VALUES(#{name}, #{photoUrl}, #{price}, #{descp}, #{releaseDate}, #{catId})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(Product product);

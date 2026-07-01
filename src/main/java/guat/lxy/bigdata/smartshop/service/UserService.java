@@ -7,8 +7,8 @@ import java.util.List;
 public interface UserService {
     User findByUsername(String username);
     User findByEmail(String email);
-    User findById(Integer id);
     boolean register(User user);
     boolean resetPassword(String email, String newPassword);
     List<Role> getUserRoles(Integer userId);
 }
+

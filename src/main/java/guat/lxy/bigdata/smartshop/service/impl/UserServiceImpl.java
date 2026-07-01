@@ -42,11 +42,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User findById(Integer id) {
-        return userMapper.findById(id);
-    }
-
-    @Override
     @Transactional
     public boolean register(User user) {
         if (userMapper.findByUsername(user.getUsername()) != null) {
