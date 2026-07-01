@@ -8,6 +8,7 @@ import guat.lxy.bigdata.smartshop.mapper.UserMapper;
 import guat.lxy.bigdata.smartshop.mapper.UserRoleMapper;
 import guat.lxy.bigdata.smartshop.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +27,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private UserRoleMapper userRoleMapper;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Override
     public User findByUsername(String username) {
@@ -49,7 +53,7 @@ public class UserServiceImpl implements UserService {
             return false;
         }
         user.setActive(1);
-        user.setPassword("{noop}" + user.getPassword());
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         userMapper.insert(user);
 
         UserRole userRole = new UserRole();
@@ -67,7 +71,7 @@ public class UserServiceImpl implements UserService {
         if (user == null) {
             return false;
         }
-        userMapper.updatePassword(user.getUsername(), "{noop}" + newPassword);
+        userMapper.updatePassword(user.getUsername(), passwordEncoder.encode(newPassword));
         return true;
     }
 

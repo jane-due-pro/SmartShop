@@ -5,13 +5,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.DelegatingPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
-import java.util.Map;
 
 @Configuration
 public class SecurityConfig {
@@ -21,24 +16,6 @@ public class SecurityConfig {
 
     @Autowired
     private EmailCodeAuthFilter emailCodeAuthFilter;
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        PasswordEncoder noopEncoder = new PasswordEncoder() {
-            @Override
-            public String encode(CharSequence rawPassword) {
-                return rawPassword.toString();
-            }
-            @Override
-            public boolean matches(CharSequence rawPassword, String encodedPassword) {
-                return rawPassword.toString().equals(encodedPassword);
-            }
-        };
-        return new DelegatingPasswordEncoder("noop", Map.of(
-                "noop", noopEncoder,
-                "bcrypt", new BCryptPasswordEncoder()
-        ));
-    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {

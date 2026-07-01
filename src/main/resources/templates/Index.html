@@ -643,18 +643,38 @@
     <script>
         // Sidebar Navigation Active State
         document.querySelectorAll('.nav-link').forEach(link => {
-            link.addEventListener('click', function() {
+            link.addEventListener('click', function(e) {
                 document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
                 this.classList.add('active');
+                
+                // Update URL
+                const href = this.getAttribute('href');
+                if (href && href !== '#') {
+                    history.pushState(null, '', href);
+                }
                 
                 // Show loading overlay
                 showLoading();
             });
         });
 
-        // Iframe Load Event
+        // Iframe Load Event - Update URL when iframe loads
         document.getElementById('mainFrame').addEventListener('load', function() {
             hideLoading();
+            try {
+                const iframeUrl = this.contentWindow.location.pathname;
+                if (iframeUrl && iframeUrl !== window.location.pathname) {
+                    history.replaceState(null, '', iframeUrl);
+                }
+            } catch(e) {}
+        });
+
+        // Browser back/forward - Load URL in iframe
+        window.addEventListener('popstate', function() {
+            const path = window.location.pathname;
+            if (path && path !== '/index') {
+                document.getElementById('mainFrame').src = path;
+            }
         });
 
         // Mobile Sidebar Toggle
