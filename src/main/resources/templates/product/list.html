@@ -535,7 +535,7 @@
             toast.className = `toast ${type}`;
             toast.innerHTML = `<span class="toast-icon">${icons[type]}</span><span>${message}</span>`;
             container.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
+            setTimeout(() => toast.remove(), 5000);
         }
 
         function createToastContainer() {
@@ -543,6 +543,31 @@
             container.className = 'toast-container';
             document.body.appendChild(container);
             return container;
+        }
+
+        // Custom Confirm Modal
+        function showConfirm(message, callback) {
+            const overlay = document.createElement('div');
+            overlay.className = 'confirm-overlay';
+            overlay.innerHTML = `
+                <div class="confirm-box">
+                    <div class="confirm-icon">⚠️</div>
+                    <div class="confirm-title">确认操作</div>
+                    <div class="confirm-message">${message}</div>
+                    <div class="confirm-buttons">
+                        <button class="confirm-btn confirm-btn-cancel" onclick="this.closest('.confirm-overlay').remove()">取消</button>
+                        <button class="confirm-btn confirm-btn-danger" id="confirmOkBtn">确认删除</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            overlay.querySelector('#confirmOkBtn').addEventListener('click', function() {
+                overlay.remove();
+                callback();
+            });
+            overlay.addEventListener('click', function(e) {
+                if (e.target === overlay) overlay.remove();
+            });
         }
 
         // Toggle Search Form
@@ -560,7 +585,7 @@
 
         // Delete Product
         function deleteProduct(id) {
-            if (confirm('确定要删除这个商品吗？此操作不可恢复。')) {
+            showConfirm('确定要删除这个商品吗？此操作不可恢复。', function() {
                 fetch('/product/delete/' + id, { method: 'POST' })
                     .then(r => r.json())
                     .then(data => {
@@ -570,7 +595,7 @@
                         }
                     })
                     .catch(() => showToast('删除失败', 'error'));
-            }
+            });
         }
 
         // Add hover effects to table rows
