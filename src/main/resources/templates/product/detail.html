@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${product.name} + ' - 商品详情'">商品详情</title>
+    <link rel="stylesheet" th:href="@{/css/design-system.css}">
+    <style>
+        .page-container { max-width: 960px; margin: 0 auto; padding: var(--space-8); }
+
+        /* 商品信息区 */
+        .product-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--border-primary);
+            overflow: hidden;
+            margin-bottom: var(--space-6);
+        }
+        .product-header {
+            padding: var(--space-8);
+            display: flex;
+            gap: var(--space-8);
+        }
+        .product-img {
+            width: 280px; height: 280px;
+            border-radius: var(--radius-lg);
+            object-fit: cover;
+            background: var(--bg-tertiary);
+            flex-shrink: 0;
+        }
+        .product-info { flex: 1; }
+        .product-name {
+            font-family: var(--font-display);
+            font-size: var(--text-3xl);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--space-3);
+        }
+        .product-category-tag {
+            display: inline-block;
+            padding: var(--space-1) var(--space-4);
+            background: rgba(74, 144, 226, 0.1);
+            color: var(--color-accent);
+            border-radius: var(--radius-full);
+            font-size: var(--text-sm);
+            margin-bottom: var(--space-4);
+        }
+        .product-price {
+            font-size: var(--text-2xl);
+            font-weight: 700;
+            color: var(--color-danger);
+            margin-bottom: var(--space-4);
+        }
+        .product-desc {
+            color: var(--text-secondary);
+            line-height: 1.8;
+            font-size: var(--text-base);
+        }
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            color: var(--color-accent);
+            text-decoration: none;
+            font-size: var(--text-sm);
+            margin-bottom: var(--space-4);
+        }
+        .back-btn:hover { text-decoration: underline; }
+
+        /* 评论统计区 */
+        .comment-stats {
+            background: var(--bg-card);
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--border-primary);
+            padding: var(--space-6);
+            margin-bottom: var(--space-6);
+            display: flex;
+            align-items: center;
+            gap: var(--space-8);
+        }
+        .stat-avg { text-align: center; }
+        .stat-avg .number {
+            font-size: var(--text-3xl);
+            font-weight: 700;
+            color: var(--color-warning);
+        }
+        .stat-avg .label { font-size: var(--text-sm); color: var(--text-muted); }
+        .stat-stars {
+            position: relative;
+            display: inline-block;
+            font-size: var(--text-xl);
+            letter-spacing: 2px;
+        }
+        .stat-stars .stars-empty { color: var(--border-primary); }
+        .stat-stars .stars-filled {
+            position: absolute;
+            left: 0; top: 0;
+            overflow: hidden;
+            white-space: nowrap;
+            color: var(--color-warning);
+        }
+        .stat-count { font-size: var(--text-sm); color: var(--text-muted); margin-top: var(--space-1); }
+
+        /* 评论表单 */
+        .comment-form-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--border-primary);
+            padding: var(--space-6);
+            margin-bottom: var(--space-6);
+        }
+        .comment-form-card h3 {
+            font-size: var(--text-lg);
+            margin-bottom: var(--space-4);
+            color: var(--text-primary);
+        }
+        .star-rating {
+            display: flex;
+            gap: var(--space-1);
+            margin-bottom: var(--space-4);
+            direction: rtl;
+        }
+        .star-rating input { display: none; }
+        .star-rating label {
+            font-size: 28px;
+            color: var(--border-primary);
+            cursor: pointer;
+            transition: color 0.15s;
+        }
+        .star-rating label:hover,
+        .star-rating label:hover ~ label,
+        .star-rating input:checked ~ label { color: var(--color-warning); }
+        .comment-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: var(--space-4);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-lg);
+            font-size: var(--text-base);
+            resize: vertical;
+            font-family: var(--font-body);
+            box-sizing: border-box;
+        }
+        .comment-textarea:focus { outline: none; border-color: var(--color-accent); }
+        .comment-actions { margin-top: var(--space-4); display: flex; justify-content: flex-end; }
+        .btn-submit {
+            padding: var(--space-3) var(--space-6);
+            background: var(--color-accent);
+            color: white;
+            border: none;
+            border-radius: var(--radius-lg);
+            font-size: var(--text-base);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-submit:hover { background: var(--color-accent-dark); }
+
+        /* 评论列表 */
+        .comment-list-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--border-primary);
+            padding: var(--space-6);
+        }
+        .comment-list-card h3 {
+            font-size: var(--text-lg);
+            margin-bottom: var(--space-4);
+            color: var(--text-primary);
+        }
+        .comment-item {
+            padding: var(--space-4);
+            border-bottom: 1px solid var(--border-primary);
+        }
+        .comment-item:last-child { border-bottom: none; }
+        .comment-meta {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            margin-bottom: var(--space-2);
+        }
+        .comment-user {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .comment-stars { color: var(--color-warning); font-size: var(--text-sm); }
+        .comment-time { font-size: var(--text-xs); color: var(--text-muted); }
+        .comment-content {
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: var(--space-2);
+        }
+        .comment-reply-btn {
+            font-size: var(--text-xs);
+            color: var(--color-accent);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+        }
+        .comment-delete-btn {
+            font-size: var(--text-xs);
+            color: var(--color-danger);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            margin-left: var(--space-3);
+        }
+        .comment-like-btn {
+            font-size: var(--text-lg);
+            color: var(--text-muted);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            margin-left: var(--space-3);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: color 0.2s;
+        }
+        .comment-like-btn:hover { color: var(--color-danger); }
+        .comment-like-btn.liked { color: var(--color-danger); font-weight: 600; }
+
+        /* 子回复 */
+        .reply-list {
+            margin-left: var(--space-8);
+            background: var(--bg-elevated);
+            border-radius: var(--radius-lg);
+            margin-top: var(--space-2);
+        }
+        .reply-list .comment-item { border-bottom-color: var(--border-secondary); }
+        .reply-to { color: var(--color-accent); font-size: var(--text-sm); margin-right: var(--space-2); }
+
+        /* 回复表单 */
+        .reply-form {
+            margin-left: var(--space-8);
+            margin-top: var(--space-2);
+            padding: var(--space-3);
+            background: var(--bg-elevated);
+            border-radius: var(--radius-lg);
+            display: none;
+        }
+        .reply-form textarea {
+            width: 100%;
+            min-height: 60px;
+            padding: var(--space-3);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-md);
+            font-size: var(--text-sm);
+            resize: vertical;
+            font-family: var(--font-body);
+            box-sizing: border-box;
+        }
+        .reply-form-actions { margin-top: var(--space-2); display: flex; gap: var(--space-2); justify-content: flex-end; }
+        .btn-reply-submit {
+            padding: var(--space-2) var(--space-4);
+            background: var(--color-accent);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: var(--text-sm);
+            cursor: pointer;
+        }
+        .btn-reply-cancel {
+            padding: var(--space-2) var(--space-4);
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-md);
+            font-size: var(--text-sm);
+            cursor: pointer;
+        }
+        .empty-hint { color: var(--text-muted); text-align: center; padding: var(--space-8); }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <a class="back-btn" th:href="@{/product/list}">← 返回商品列表</a>
+
+        <!-- 商品信息 -->
+        <div class="product-card">
+            <div class="product-header">
+                <img class="product-img"
+                     th:src="${product.photoUrl} != null ? ${product.photoUrl} : 'https://via.placeholder.com/280'"
+                     th:alt="${product.name}">
+                <div class="product-info">
+                    <h1 class="product-name" th:text="${product.name}">商品名</h1>
+                    <span class="product-category-tag" th:text="${product.categoryName}">分类</span>
+                    <div class="product-price" th:text="'¥' + ${#numbers.formatDecimal(product.price, 1, 2)}">¥0.00</div>
+                    <p class="product-desc" th:text="${product.descp} ?: '暂无描述'">商品描述</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 评论统计 -->
+        <div class="comment-stats">
+            <div class="stat-avg">
+                <div class="number" id="avgNumber" th:text="${avgRating}">未加载</div>
+                <div class="label">平均评分</div>
+            </div>
+            <div>
+                <div class="stat-stars" id="avgStars"><span class="stars-empty">★★★★★</span><span class="stars-filled" style="width:0">★★★★★</span></div>
+                <div class="stat-count" th:text="'共 ' + ${commentCount} + ' 条评论'">共 0 条评论</div>
+            </div>
+        </div>
+
+        <!-- 评论表单 -->
+        <div class="comment-form-card">
+            <h3>发表评论</h3>
+            <form id="commentForm">
+                <input type="hidden" name="productId" th:value="${product.id}">
+                <div class="star-rating">
+                    <input type="radio" id="star5" name="rating" value="5" checked><label for="star5">★</label>
+                    <input type="radio" id="star4" name="rating" value="4"><label for="star4">★</label>
+                    <input type="radio" id="star3" name="rating" value="3"><label for="star3">★</label>
+                    <input type="radio" id="star2" name="rating" value="2"><label for="star2">★</label>
+                    <input type="radio" id="star1" name="rating" value="1"><label for="star1">★</label>
+                </div>
+                <textarea class="comment-textarea" name="content" placeholder="分享你对这个商品的看法..." required></textarea>
+                <div class="comment-actions">
+                    <button type="submit" class="btn-submit">发表评论</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 评论列表 -->
+        <div class="comment-list-card">
+            <h3>全部评论</h3>
+            <div th:if="${#lists.isEmpty(comments)}" class="empty-hint">暂无评论，快来抢沙发吧！</div>
+
+            <div th:each="comment : ${comments}" class="comment-item" th:id="'comment-' + ${comment.id}">
+                <div class="comment-meta">
+                    <span class="comment-user" th:text="${comment.username}">用户</span>
+                    <span class="comment-stars" th:if="${comment.rating} != null" th:text="${#strings.repeat('★', comment.rating)} + ${#strings.repeat('☆', 5 - comment.rating)}">★★★★★</span>
+                    <span class="comment-time" th:text="${#dates.format(comment.createTime, 'yyyy-MM-dd HH:mm')}">2025-01-01</span>
+                    <button class="comment-reply-btn" th:onclick="'toggleReply(' + ${comment.id} + ')'">回复</button>
+                    <button class="comment-like-btn" th:classappend="${comment.liked} ? 'liked' : ''"
+                            th:onclick="'toggleLike(' + ${comment.id} + ')'"
+                            th:id="'like-btn-' + ${comment.id}">
+                        <span>♥</span> <span th:text="${comment.likeCount} ?: 0">0</span>
+                    </button>
+                    <button class="comment-delete-btn"
+                            th:if="${isAdmin or comment.username == currentUsername}"
+                            th:onclick="'deleteComment(' + ${comment.id} + ')'">删除</button>
+                </div>
+                <div class="comment-content" th:text="${comment.content}">评论内容</div>
+
+                <!-- 子回复 -->
+                <div class="reply-list" th:if="${!#lists.isEmpty(comment.replies)}">
+                    <div th:each="reply : ${comment.replies}" class="comment-item">
+                        <div class="comment-meta">
+                            <span class="comment-user" th:text="${reply.username}">用户</span>
+                            <span class="comment-time" th:text="${#dates.format(reply.createTime, 'yyyy-MM-dd HH:mm')}">2025-01-01</span>
+                            <button class="comment-like-btn" th:classappend="${reply.liked} ? 'liked' : ''"
+                                    th:onclick="'toggleLike(' + ${reply.id} + ')'"
+                                    th:id="'like-btn-' + ${reply.id}">
+                                <span>♥</span> <span th:text="${reply.likeCount} ?: 0">0</span>
+                            </button>
+                            <button class="comment-delete-btn"
+                                    th:if="${isAdmin or reply.username == currentUsername}"
+                                    th:onclick="'deleteComment(' + ${reply.id} + ')'">删除</button>
+                        </div>
+                        <div class="comment-content" th:text="${reply.content}">回复内容</div>
+                    </div>
+                </div>
+
+                <!-- 回复表单 -->
+                <div class="reply-form" th:id="'reply-form-' + ${comment.id}">
+                    <textarea th:id="'reply-text-' + ${comment.id}" placeholder="回复这条评论..."></textarea>
+                    <div class="reply-form-actions">
+                        <button class="btn-reply-cancel" th:onclick="'toggleReply(' + ${comment.id} + ')'">取消</button>
+                        <button class="btn-reply-submit" th:onclick="'submitReply(' + ${comment.id} + ', ' + ${product.id} + ')'">回复</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 渲染平均星级（支持小数，如 3.3）
+        (function() {
+            var numEl = document.getElementById('avgNumber');
+            var avg = parseFloat(numEl.textContent);
+            if (isNaN(avg)) avg = 0;
+            numEl.textContent = avg.toFixed(1);
+            var pct = Math.max(0, Math.min(100, (avg / 5) * 100));
+            document.querySelector('#avgStars .stars-filled').style.width = pct + '%';
+        })();
+
+        // 展开/收起回复表单
+        function toggleReply(commentId) {
+            var form = document.getElementById('reply-form-' + commentId);
+            form.style.display = form.style.display === 'none' || form.style.display === '' ? 'block' : 'none';
+        }
+
+        // 提交评论
+        document.getElementById('commentForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var formData = new FormData(this);
+            var data = {
+                productId: parseInt(formData.get('productId')),
+                rating: parseInt(formData.get('rating')),
+                content: formData.get('content')
+            };
+            fetch('/comment/add', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            }).then(r => r.json()).then(res => {
+                if (res.success) { location.reload(); }
+                else { alert(res.message); }
+            });
+        });
+
+        // 提交回复
+        function submitReply(parentId, productId) {
+            var textarea = document.getElementById('reply-text-' + parentId);
+            var content = textarea.value.trim();
+            if (!content) { alert('请输入回复内容'); return; }
+            fetch('/comment/add', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({productId: productId, parentId: parentId, content: content})
+            }).then(r => r.json()).then(res => {
+                if (res.success) { location.reload(); }
+                else { alert(res.message); }
+            });
+        }
+
+        // 删除评论
+        function deleteComment(id) {
+            if (!confirm('确定删除这条评论吗？')) return;
+            fetch('/comment/delete/' + id, {method: 'POST'})
+                .then(r => r.json()).then(res => {
+                    if (res.success) { location.reload(); }
+                    else { alert(res.message); }
+                });
+        }
+
+        // 点赞/取消点赞
+        function toggleLike(commentId) {
+            fetch('/comment/like/' + commentId, {method: 'POST'})
+                .then(r => r.json()).then(res => {
+                    if (res.success) {
+                        var btn = document.getElementById('like-btn-' + commentId);
+                        var countSpan = btn.querySelector('span:last-child');
+                        var count = parseInt(countSpan.textContent);
+                        if (res.message === '点赞成功') {
+                            btn.classList.add('liked');
+                            countSpan.textContent = count + 1;
+                        } else {
+                            btn.classList.remove('liked');
+                            countSpan.textContent = Math.max(0, count - 1);
+                        }
+                    } else { alert(res.message); }
+                });
+        }
+    </script>
+</body>
+</html>
