@@ -9,7 +9,4 @@ public interface CategoryService {
     boolean save(Category category);
     boolean update(Category category);
     boolean deleteById(Integer id);
-
-    /** 编程式 Redis 缓存版的分类全量列表 */
-    List<Category> findAllWithCache();
 }

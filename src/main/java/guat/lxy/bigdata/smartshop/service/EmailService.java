@@ -11,13 +11,13 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import jakarta.mail.internet.MimeMessage;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 /**
  * 邮件验证码服务
  *
- * 验证码存储从原 ConcurrentHashMap 改为 Redis，TTL 5 分钟：
+ * 验证码存储在 Redis，TTL 5 分钟：
  * - 重启服务验证码仍然有效
  * - 多实例部署时验证码共享
  * - 自动过期，无需手动清理
@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 public class EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
-
     private static final String CODE_KEY_PREFIX = "smartshop:verify:code:";
 
     @Autowired
@@ -47,9 +46,8 @@ public class EmailService {
     public void sendVerificationCode(String toEmail, String type) {
         String code = generateCode();
 
-        // 存 Redis，5 分钟过期
         redisTemplate.opsForValue().set(CODE_KEY_PREFIX + toEmail, code, codeTtlSeconds, TimeUnit.SECONDS);
-        log.info("[EmailService] 验证码已生成并写入 Redis, email={}, ttl={}s", toEmail, codeTtlSeconds);
+        log.info("[EmailService] 验证码已写入 Redis, email={}, ttl={}s", toEmail, codeTtlSeconds);
 
         String subject = "SmartShop - " + (type != null ? type : "验证码");
         String content = buildEmailContent(code, type);
@@ -64,7 +62,6 @@ public class EmailService {
             mailSender.send(message);
             log.info("[EmailService] 验证码邮件发送成功, email={}", toEmail);
         } catch (Exception e) {
-            // 邮件发送失败时清理掉 Redis 里已存的验证码，避免用户输入后永远校验失败
             redisTemplate.delete(CODE_KEY_PREFIX + toEmail);
             log.error("[EmailService] 发送邮件失败, email={}, 已清理 Redis 验证码", toEmail, e);
         }
@@ -78,20 +75,18 @@ public class EmailService {
             return false;
         }
         if (cachedCode.toString().equals(code)) {
-            redisTemplate.delete(key); // 一次性使用
+            redisTemplate.delete(key);
             log.info("[EmailService] verifyCode 成功, email={}", email);
             return true;
         }
-        log.info("[EmailService] verifyCode 失败：验证码不匹配, email={}, expected={}, got={}",
-                email, cachedCode, code);
+        log.info("[EmailService] verifyCode 失败：验证码不匹配, email={}", email);
         return false;
     }
 
     private String generateCode() {
-        Random random = new Random();
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 6; i++) {
-            sb.append(random.nextInt(10));
+            sb.append(ThreadLocalRandom.current().nextInt(10));
         }
         return sb.toString();
     }

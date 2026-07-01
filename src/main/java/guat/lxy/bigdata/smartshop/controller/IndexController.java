@@ -31,8 +31,8 @@ public class IndexController {
 
     @GetMapping("/welcome")
     public String welcome(Model model) {
-        List<Category> categories = categoryService.findAllWithCache();
-        List<Product> products = productService.findAllWithCache();
+        List<Category> categories = categoryService.findAll();
+        List<Product> products = productService.findAll();
         model.addAttribute("categories", categories);
         model.addAttribute("products", products);
         return "Welcome";

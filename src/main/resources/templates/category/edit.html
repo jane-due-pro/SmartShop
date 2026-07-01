@@ -2,59 +2,261 @@
 <html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>编辑分类</title>
+    <link rel="stylesheet" th:href="@{/css/design-system.css}">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; }
-        .page-header { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
-        .page-header h2 { color: #333; font-size: 20px; }
-        .form-container { background: white; border-radius: 12px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; color: #555; font-size: 14px; font-weight: 500; }
-        .form-group input, .form-group textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
-        .form-group textarea { min-height: 100px; resize: vertical; }
-        .form-group input:focus, .form-group textarea:focus { outline: none; border-color: #667eea; }
-        .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 30px; }
-        .btn { padding: 12px 24px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; text-decoration: none; }
-        .btn-primary { background: #667eea; color: white; }
-        .btn-primary:hover { background: #5a6fd6; }
-        .btn-secondary { background: #95a5a6; color: white; }
-        .btn-secondary:hover { background: #7f8c8d; }
+        /* Edit Category Page Styles */
+        .page-container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: var(--space-8);
+        }
+
+        /* Page Header */
+        .page-header {
+            background: var(--bg-card);
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--border-primary);
+            padding: var(--space-8);
+            margin-bottom: var(--space-6);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .page-title {
+            font-family: var(--font-display);
+            font-size: var(--text-2xl);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0;
+        }
+
+        .page-subtitle {
+            font-size: var(--text-sm);
+            color: var(--text-muted);
+            margin-top: var(--space-2);
+        }
+
+        .category-id {
+            display: inline-flex;
+            padding: var(--space-2) var(--space-4);
+            background: rgba(74, 144, 226, 0.1);
+            color: var(--color-accent);
+            border-radius: var(--radius-full);
+            font-size: var(--text-sm);
+            font-weight: 600;
+        }
+
+        /* Form Card */
+        .form-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--border-primary);
+            overflow: hidden;
+        }
+
+        .form-header {
+            padding: var(--space-6);
+            border-bottom: 1px solid var(--border-primary);
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+        }
+
+        .form-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(74, 144, 226, 0.1) 100%);
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--text-2xl);
+        }
+
+        .form-title {
+            font-size: var(--text-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0;
+        }
+
+        .form-description {
+            font-size: var(--text-sm);
+            color: var(--text-muted);
+            margin-top: var(--space-1);
+        }
+
+        .form-body {
+            padding: var(--space-8);
+        }
+
+        .form-group {
+            margin-bottom: var(--space-6);
+        }
+
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: var(--space-2);
+            font-size: var(--text-sm);
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .form-label .required {
+            color: var(--color-danger);
+            margin-left: var(--space-1);
+        }
+
+        .form-input,
+        .form-textarea {
+            width: 100%;
+            padding: var(--space-4);
+            font-family: var(--font-body);
+            font-size: var(--text-base);
+            color: var(--text-primary);
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-primary);
+            border-radius: var(--radius-lg);
+            transition: all var(--transition-fast);
+        }
+
+        .form-input:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.1);
+        }
+
+        .form-input::placeholder,
+        .form-textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .form-hint {
+            font-size: var(--text-xs);
+            color: var(--text-muted);
+            margin-top: var(--space-2);
+        }
+
+        .form-footer {
+            padding: var(--space-6);
+            border-top: 1px solid var(--border-primary);
+            background: var(--bg-elevated);
+            display: flex;
+            justify-content: flex-end;
+            gap: var(--space-4);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .page-container {
+                padding: var(--space-4);
+            }
+            
+            .page-header {
+                padding: var(--space-6);
+                flex-direction: column;
+                align-items: flex-start;
+                gap: var(--space-4);
+            }
+            
+            .form-body {
+                padding: var(--space-6);
+            }
+            
+            .form-footer {
+                flex-direction: column;
+            }
+            
+            .form-footer .btn {
+                width: 100%;
+            }
+        }
+
+        /* Animations */
+        .animate-fadeIn {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="page-container animate-fadeIn">
+        <!-- Page Header -->
         <div class="page-header">
-            <h2>编辑分类</h2>
+            <div>
+                <h1 class="page-title">编辑分类</h1>
+                <p class="page-subtitle">修改分类信息</p>
+            </div>
+            <span class="category-id" th:text="'ID: ' + ${category.id}">ID: 1</span>
         </div>
 
-        <div class="form-container">
-            <input type="hidden" id="id" th:value="${category.id}">
-            <div class="form-group">
-                <label>分类名称 *</label>
-                <input type="text" id="name" th:value="${category.name}" required>
+        <!-- Form Card -->
+        <div class="form-card">
+            <div class="form-header">
+                <div class="form-icon">✏️</div>
+                <div>
+                    <h2 class="form-title">分类信息</h2>
+                    <p class="form-description">带 <span style="color: var(--color-danger);">*</span> 的为必填项</p>
+                </div>
             </div>
-            <div class="form-group">
-                <label>分类描述</label>
-                <textarea id="descp" th:text="${category.descp}"></textarea>
+
+            <div class="form-body">
+                <input type="hidden" id="id" th:value="${category.id}">
+                <div class="form-group">
+                    <label class="form-label">分类名称 <span class="required">*</span></label>
+                    <input type="text" id="name" class="form-input" th:value="${category.name}" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">分类描述</label>
+                    <textarea id="descp" class="form-textarea" th:text="${category.descp}"></textarea>
+                    <p class="form-hint">可选，用于描述该分类的特点或用途</p>
+                </div>
             </div>
-            <div class="form-actions">
+
+            <div class="form-footer">
                 <a th:href="@{/category/list}" class="btn btn-secondary">取消</a>
-                <button class="btn btn-primary" onclick="doEdit()">保存</button>
+                <button class="btn btn-primary" onclick="doEdit()">
+                    <span>💾</span> 保存修改
+                </button>
             </div>
         </div>
     </div>
 
     <script>
+        // Edit Category
         function doEdit() {
             const id = document.getElementById('id').value;
             const name = document.getElementById('name').value;
             const descp = document.getElementById('descp').value;
 
-            if (!name) { alert('请输入分类名称'); return; }
+            if (!name) { 
+                alert('请输入分类名称'); 
+                return; 
+            }
 
-            const data = { id: parseInt(id), name: name, descp: descp };
+            const data = { 
+                id: parseInt(id), 
+                name: name, 
+                descp: descp 
+            };
 
             fetch('/category/edit', {
                 method: 'POST',
@@ -64,7 +266,9 @@
             .then(r => r.json())
             .then(result => {
                 alert(result.message);
-                if (result.success) { window.location.href = '/category/list'; }
+                if (result.success) { 
+                    window.location.href = '/category/list'; 
+                }
             })
             .catch(() => alert('保存失败'));
         }
