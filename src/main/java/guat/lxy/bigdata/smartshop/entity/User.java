@@ -12,4 +12,5 @@ public class User implements Serializable {
     private String password;
     private Integer active;
     private String email;
+    private String avatar;
 }

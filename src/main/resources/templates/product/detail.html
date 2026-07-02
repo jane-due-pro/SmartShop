@@ -67,6 +67,11 @@
         }
         .back-btn:hover { text-decoration: underline; }
 
+        .fav-count { font-size: var(--text-xs); color: var(--text-muted); }
+        .fav-btn { font-size: 20px; cursor: pointer; user-select: none; color: #999; transition: color 0.2s; }
+        .fav-btn:hover { color: #f39c12; }
+        .fav-btn.active { color: #f39c12; }
+
         /* 评论统计区 */
         .comment-stats {
             background: var(--bg-card);
@@ -275,6 +280,7 @@
     </style>
 </head>
 <body>
+    <script>if (window.self === window.top) window.location.href = '/index#' + window.location.pathname;</script>
     <div class="page-container">
         <a class="back-btn" th:href="@{/product/list}">← 返回商品列表</a>
 
@@ -282,7 +288,8 @@
         <div class="product-card">
             <div class="product-header">
                 <img class="product-img"
-                     th:src="${product.photoUrl} != null ? ${product.photoUrl} : 'https://via.placeholder.com/280'"
+                     th:src="${product.photoUrl} != null ? ${product.photoUrl} : '/uploads/products/base.jpg'"
+                     onerror="this.src='/uploads/products/base.jpg'"
                      th:alt="${product.name}">
                 <div class="product-info">
                     <h1 class="product-name" th:text="${product.name}">商品名</h1>
@@ -291,6 +298,15 @@
                     <p class="product-desc" th:text="${product.descp} ?: '暂无描述'">商品描述</p>
                 </div>
             </div>
+        </div>
+
+        <!-- 收藏 -->
+        <div style="margin-bottom: var(--space-6); display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); background: var(--bg-card); border-radius: var(--radius-xl); border: 1px solid var(--border-primary);">
+            <input type="hidden" id="favPid" th:value="${product.id}" />
+            <input type="hidden" id="favState" th:value="${favorited}" />
+            <input type="hidden" id="favCntVal" th:value="${favoriteCount}" />
+            <span id="favBtn" style="font-size:22px; cursor:pointer; user-select:none; color:#aaa;">☆ 收藏</span>
+            <span id="favCount" style="font-size:13px; color:#999;">0 人收藏</span>
         </div>
 
         <!-- 评论统计 -->
@@ -386,6 +402,38 @@
             numEl.textContent = avg.toFixed(1);
             var pct = Math.max(0, Math.min(100, (avg / 5) * 100));
             document.querySelector('#avgStars .stars-filled').style.width = pct + '%';
+        })();
+
+        // 初始化收藏按钮
+        (function() {
+            var btn = document.getElementById('favBtn');
+            var pid = document.getElementById('favPid').value;
+            var fav = document.getElementById('favState').value === 'true';
+            var cnt = parseInt(document.getElementById('favCntVal').value) || 0;
+            document.getElementById('favCount').textContent = cnt + ' 人收藏';
+            if (fav) {
+                btn.textContent = '★ 已收藏';
+                btn.style.color = '#f39c12';
+            }
+            btn.onclick = function() {
+                fetch('/favorite/toggle/' + pid, {method: 'POST'})
+                    .then(function(r) { return r.json(); })
+                    .then(function(res) {
+                        if (!res.success) { alert(res.message); return; }
+                        var countEl = document.getElementById('favCount');
+                        var c = parseInt(countEl.textContent) || 0;
+                        if (res.message === '已收藏') {
+                            btn.textContent = '★ 已收藏';
+                            btn.style.color = '#f39c12';
+                            countEl.textContent = (c + 1) + ' 人收藏';
+                        } else {
+                            btn.textContent = '☆ 收藏';
+                            btn.style.color = '#aaa';
+                            countEl.textContent = Math.max(0, c - 1) + ' 人收藏';
+                        }
+                    })
+                    .catch(function(err) { alert('操作失败: ' + err); });
+            };
         })();
 
         // 展开/收起回复表单

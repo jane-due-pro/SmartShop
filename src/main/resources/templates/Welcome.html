@@ -273,12 +273,12 @@
             width: 100%;
             height: 150px;
             background: var(--bg-tertiary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-muted);
-            font-size: var(--text-sm);
+            overflow: hidden;
             border-bottom: 1px solid var(--border-primary);
+            display: block;
+        }
+        .product-image img {
+            display: block;
         }
 
         .product-info {
@@ -509,6 +509,7 @@
     </style>
 </head>
 <body>
+    <script>if (window.self === window.top) window.location.href = '/index#' + window.location.pathname;</script>
     <div class="welcome-container">
         <!-- Hero Section -->
         <section class="hero-section animate-fadeIn">
@@ -588,7 +589,11 @@
                 </div>
                 <div class="products-grid">
                     <div class="product-card" th:each="product : ${products}">
-                        <div class="product-image" th:text="'商品图片'">商品图片</div>
+                        <a th:href="@{/product/detail/{id}(id=${product.id})}" class="product-image">
+                            <img th:src="${product.photoUrl} != null ? ${product.photoUrl} : '/uploads/products/base.jpg'"
+                                 onerror="this.src='/uploads/products/base.jpg'"
+                                 th:alt="${product.name}" style="width:100%; height:100%; object-fit:cover;" />
+                        </a>
                         <div class="product-info">
                             <div class="product-name" th:text="${product.name}">商品名称</div>
                             <div class="product-price" th:text="'¥' + ${#numbers.formatDecimal(product.price, 1, 2)}">¥0.00</div>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人中心</title>
+    <link rel="stylesheet" th:href="@{/css/design-system.css}">
+    <style>
+        .page-container { max-width: 900px; margin: 0 auto; padding: var(--space-8); }
+        .page-title { font-family: var(--font-display); font-size: var(--text-2xl); font-weight: 600; color: var(--text-primary); margin-bottom: var(--space-6); }
+        .back-link { display: inline-block; color: var(--color-accent); text-decoration: none; font-size: var(--text-sm); margin-bottom: var(--space-4); }
+        .back-link:hover { text-decoration: underline; }
+
+        .card { background: var(--bg-card); border-radius: var(--radius-xl); border: 1px solid var(--border-primary); padding: var(--space-6); margin-bottom: var(--space-6); }
+        .card-title { font-size: var(--text-lg); font-weight: 600; margin-bottom: var(--space-4); }
+
+        /* 头像区 */
+        .avatar-section { display: flex; align-items: center; gap: var(--space-6); }
+        .avatar-img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; background: var(--bg-tertiary); border: 2px solid var(--border-primary); }
+        .avatar-actions { display: flex; flex-direction: column; gap: var(--space-2); }
+        .btn-upload { padding: var(--space-2) var(--space-4); background: var(--color-accent); color: white; border: none; border-radius: var(--radius-md); font-size: var(--text-sm); cursor: pointer; }
+        .btn-upload:hover { background: var(--color-accent-dark); }
+        .upload-hint { font-size: var(--text-xs); color: var(--text-muted); }
+
+        /* 信息区 */
+        .info-row { display: flex; align-items: center; padding: var(--space-3) 0; border-bottom: 1px solid var(--border-primary); }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { width: 80px; font-size: var(--text-sm); color: var(--text-muted); flex-shrink: 0; }
+        .info-value { flex: 1; font-size: var(--text-base); color: var(--text-primary); }
+        .info-edit { font-size: var(--text-xs); color: var(--color-accent); cursor: pointer; background: none; border: none; }
+
+        /* 收藏列表 */
+        .fav-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--space-4); }
+        .fav-item { border: 1px solid var(--border-primary); border-radius: var(--radius-lg); overflow: hidden; transition: box-shadow 0.2s; }
+        .fav-item:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .fav-item img { width: 100%; height: 140px; object-fit: cover; background: var(--bg-tertiary); }
+        .fav-item-info { padding: var(--space-3); }
+        .fav-item-name { font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); margin-bottom: var(--space-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .fav-item-price { font-size: var(--text-sm); color: var(--color-danger); font-weight: 600; }
+
+        .empty-hint { color: var(--text-muted); text-align: center; padding: var(--space-6); }
+        a.fav-link { text-decoration: none; color: inherit; }
+    </style>
+</head>
+<body>
+    <script>if (window.self === window.top) window.location.href = '/index#' + window.location.pathname;</script>
+    <div class="page-container">
+        <a class="back-link" href="/index" target="_top">← 返回首页</a>
+        <h1 class="page-title">个人中心</h1>
+
+        <!-- 头像卡片 -->
+        <div class="card">
+            <div class="avatar-section">
+                <img class="avatar-img" id="avatarImg"
+                     th:src="${user.avatar} != null ? ${user.avatar} : '/uploads/avatars/base.jpg'"
+                     onerror="this.src='/uploads/avatars/base.jpg'"
+                     alt="头像">
+                <div class="avatar-actions">
+                    <input type="file" id="avatarFile" accept="image/*" style="display:none;" />
+                    <button class="btn-upload" onclick="document.getElementById('avatarFile').click()">更换头像</button>
+                    <span class="upload-hint">支持 jpg/png/gif/webp，最大 5MB</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 个人信息卡片 -->
+        <div class="card">
+            <div class="card-title">个人信息</div>
+            <div class="info-row">
+                <span class="info-label">用户名</span>
+                <span class="info-value" th:text="${user.username}">用户名</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">邮箱</span>
+                <span class="info-value" id="emailValue" th:text="${user.email}">邮箱</span>
+                <button class="info-edit" onclick="editEmail()">修改</button>
+            </div>
+            <div class="info-row" id="emailEditRow" style="display:none;">
+                <span class="info-label">新邮箱</span>
+                <input type="email" id="emailInput" style="flex:1; padding:4px 8px; border:1px solid var(--border-primary); border-radius:4px;" />
+                <button class="btn-upload" style="margin-left:8px; padding:4px 12px;" onclick="saveEmail()">保存</button>
+                <button class="info-edit" style="margin-left:4px;" onclick="cancelEmail()">取消</button>
+            </div>
+        </div>
+
+        <!-- 我的收藏卡片 -->
+        <div class="card">
+            <div class="card-title">我的收藏</div>
+            <div id="favContainer">
+                <div class="empty-hint">加载中...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 头像上传
+        document.getElementById('avatarFile').addEventListener('change', function() {
+            var file = this.files[0];
+            if (!file) return;
+            var formData = new FormData();
+            formData.append('file', file);
+            fetch('/profile/uploadAvatar', {method: 'POST', body: formData})
+                .then(function(r) { return r.json(); })
+                .then(function(res) {
+                    if (res.success) {
+                        document.getElementById('avatarImg').src = res.message;
+                        alert('头像更新成功');
+                    } else { alert(res.message); }
+                })
+                .catch(function() { alert('上传失败'); });
+        });
+
+        // 编辑邮箱
+        function editEmail() {
+            document.getElementById('emailEditRow').style.display = 'flex';
+            document.getElementById('emailInput').value = document.getElementById('emailValue').textContent;
+        }
+        function cancelEmail() {
+            document.getElementById('emailEditRow').style.display = 'none';
+        }
+        function saveEmail() {
+            var email = document.getElementById('emailInput').value.trim();
+            if (!email) { alert('请输入邮箱'); return; }
+            var fd = new FormData();
+            fd.append('email', email);
+            fetch('/profile/updateEmail', {method: 'POST', body: fd})
+                .then(function(r) { return r.json(); })
+                .then(function(res) {
+                    if (res.success) {
+                        document.getElementById('emailValue').textContent = email;
+                        cancelEmail();
+                        alert('邮箱更新成功');
+                    } else { alert(res.message); }
+                });
+        }
+
+        // 加载我的收藏
+        (function() {
+            fetch('/profile/favorites')
+                .then(function(r) {
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                })
+                .then(function(list) {
+                    var container = document.getElementById('favContainer');
+                    if (!list || list.length === 0) {
+                        container.innerHTML = '<div class="empty-hint">暂无收藏</div>';
+                        return;
+                    }
+                    var html = '<div class="fav-grid">';
+                    for (var i = 0; i < list.length; i++) {
+                        var p = list[i];
+                        html += '<a class="fav-link" href="/product/detail/' + p.id + '">'
+                            + '<div class="fav-item">'
+                            + '<img src="' + (p.photoUrl || '/uploads/products/base.jpg') + '" onerror="this.src=\'/uploads/products/base.jpg\'" alt="">'
+                            + '<div class="fav-item-info">'
+                            + '<div class="fav-item-name">' + p.name + '</div>'
+                            + '<div class="fav-item-price">¥' + (p.price ? p.price.toFixed(2) : '0.00') + '</div>'
+                            + '</div></div></a>';
+                    }
+                    html += '</div>';
+                    container.innerHTML = html;
+                })
+                .catch(function() {
+                    document.getElementById('favContainer').innerHTML = '<div class="empty-hint">加载失败</div>';
+                });
+        })();
+    </script>
+</body>
+</html>

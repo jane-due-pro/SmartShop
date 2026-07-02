@@ -203,6 +203,7 @@
     </style>
 </head>
 <body>
+    <script>if (window.self === window.top) window.location.href = '/index#' + window.location.pathname;</script>
     <div class="page-container animate-fadeIn">
         <!-- Page Header -->
         <div class="page-header">
@@ -250,9 +251,9 @@
                     </div>
 
                     <div class="form-group full-width">
-                        <label class="form-label">图片URL</label>
-                        <input type="text" id="photoUrl" class="form-input" placeholder="请输入图片地址">
-                        <p class="form-hint">留空则使用默认图片</p>
+                        <label class="form-label">商品图片</label>
+                        <input type="file" id="photoFile" class="form-input" accept="image/*">
+                        <p class="form-hint">支持 jpg/png/gif/webp，最大 5MB</p>
                     </div>
 
                     <div class="form-group full-width">
@@ -313,9 +314,9 @@
             const name = document.getElementById('name').value;
             const catId = document.getElementById('catId').value;
             const price = document.getElementById('price').value;
-            const photoUrl = document.getElementById('photoUrl').value;
             const descp = document.getElementById('descp').value;
             const releaseDate = document.getElementById('releaseDate').value;
+            const photoFile = document.getElementById('photoFile').files[0];
 
             if (!name || !catId || !price) { 
                 showToast('请填写必填项', 'warning');
@@ -326,7 +327,7 @@
                 name: name,
                 catId: parseInt(catId),
                 price: parseFloat(price),
-                photoUrl: photoUrl || '/img/default.jpg',
+                photoUrl: '/uploads/products/base.jpg',
                 descp: descp,
                 releaseDate: releaseDate || new Date().toISOString().split('T')[0]
             };
@@ -338,7 +339,17 @@
             })
             .then(r => r.json())
             .then(result => {
-                showToastAndRedirect(result.message, result.success ? 'success' : 'error', '/product/list');
+                if (!result.success) { showToast(result.message, 'error'); return; }
+                if (photoFile) {
+                    const fd = new FormData();
+                    fd.append('file', photoFile);
+                    fetch('/product/uploadImage/' + result.productId, { method: 'POST', body: fd })
+                        .then(r => r.json())
+                        .then(() => showToastAndRedirect('添加成功', 'success', '/product/list'))
+                        .catch(() => showToastAndRedirect('添加成功（图片上传失败）', 'warning', '/product/list'));
+                } else {
+                    showToastAndRedirect(result.message, 'success', '/product/list');
+                }
             })
             .catch(() => showToast('添加失败', 'error'));
         }

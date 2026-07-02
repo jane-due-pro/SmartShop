@@ -562,7 +562,7 @@
                     <div class="nav-section-title">主导航</div>
                     <ul class="nav-menu">
                         <li class="nav-item">
-                            <a th:href="@{/welcome}" target="mainFrame" class="nav-link active">
+                            <a th:href="@{/welcome}" target="mainFrame" class="nav-link">
                                 <span class="nav-icon">🏠</span>
                                 <span class="nav-text">系统首页</span>
                             </a>
@@ -577,6 +577,12 @@
                             <a th:href="@{/category/list}" target="mainFrame" class="nav-link">
                                 <span class="nav-icon">📁</span>
                                 <span class="nav-text">分类管理</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a th:href="@{/profile}" target="mainFrame" class="nav-link">
+                                <span class="nav-icon">👤</span>
+                                <span class="nav-text">个人中心</span>
                             </a>
                         </li>
                     </ul>
@@ -650,7 +656,7 @@
                 // Update URL
                 const href = this.getAttribute('href');
                 if (href && href !== '#') {
-                    history.pushState(null, '', href);
+                    window.location.hash = href;
                 }
                 
                 // Show loading overlay
@@ -658,24 +664,29 @@
             });
         });
 
-        // Iframe Load Event - Update URL when iframe loads
+        // Iframe Load Event
         document.getElementById('mainFrame').addEventListener('load', function() {
             hideLoading();
-            try {
-                const iframeUrl = this.contentWindow.location.pathname;
-                if (iframeUrl && iframeUrl !== window.location.pathname) {
-                    history.replaceState(null, '', iframeUrl);
-                }
-            } catch(e) {}
         });
 
-        // Browser back/forward - Load URL in iframe
-        window.addEventListener('popstate', function() {
-            const path = window.location.pathname;
-            if (path && path !== '/index') {
+        // 读取 hash 加载对应页面并设置 active
+        (function() {
+            var hash = window.location.hash;
+            if (hash && hash.length > 1) {
+                var path = hash.substring(1);
                 document.getElementById('mainFrame').src = path;
+                document.querySelectorAll('.nav-link').forEach(function(link) {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === path) {
+                        link.classList.add('active');
+                    }
+                });
+            } else {
+                // 无 hash，默认激活第一个导航项
+                var first = document.querySelector('.nav-link');
+                if (first) first.classList.add('active');
             }
-        });
+        })();
 
         // Mobile Sidebar Toggle
         function toggleSidebar() {

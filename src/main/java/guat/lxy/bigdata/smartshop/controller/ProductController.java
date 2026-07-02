@@ -6,14 +6,19 @@ import guat.lxy.bigdata.smartshop.entity.Product;
 import guat.lxy.bigdata.smartshop.entity.User;
 import guat.lxy.bigdata.smartshop.service.CategoryService;
 import guat.lxy.bigdata.smartshop.service.ProductCommentService;
+import guat.lxy.bigdata.smartshop.service.ProductFavoriteService;
 import guat.lxy.bigdata.smartshop.service.ProductService;
 import guat.lxy.bigdata.smartshop.service.UserService;
 import guat.lxy.bigdata.smartshop.util.Result;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +38,12 @@ public class ProductController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private ProductFavoriteService favoriteService;
+
+    @Value("${file.upload-dir:src/main/resources/static/uploads}")
+    private String uploadDir;
 
     @GetMapping("/list")
     public String list(@RequestParam(defaultValue = "1") Integer pageNum,
@@ -69,6 +80,13 @@ public class ProductController {
         model.addAttribute("avgRating", commentService.avgRatingByProductId(id));
         model.addAttribute("currentUsername", principal.getName());
         model.addAttribute("isAdmin", isAdmin);
+        try {
+            model.addAttribute("favorited", favoriteService.isFavorited(id, user.getId()));
+            model.addAttribute("favoriteCount", favoriteService.countByProductId(id));
+        } catch (Exception e) {
+            model.addAttribute("favorited", false);
+            model.addAttribute("favoriteCount", 0);
+        }
         return "product/detail";
     }
 
@@ -82,7 +100,45 @@ public class ProductController {
     @PostMapping("/add")
     @ResponseBody
     public Map<String, Object> add(@RequestBody Product product) {
-        return Result.of(productService.save(product), "添加成功", "添加失败");
+        boolean ok = productService.save(product);
+        if (ok) {
+            return Map.of("success", true, "message", "添加成功", "productId", product.getId());
+        }
+        return Result.fail("添加失败");
+    }
+
+    @PostMapping("/uploadImage/{id}")
+    @ResponseBody
+    public Map<String, Object> uploadImage(@PathVariable Integer id,
+                                           @RequestParam("file") MultipartFile file) {
+        if (file.isEmpty()) return Result.fail("请选择文件");
+        String name = file.getOriginalFilename();
+        if (name == null || !name.matches("(?i).*\\.(jpg|jpeg|png|gif|webp)$")) {
+            return Result.fail("仅支持 jpg/png/gif/webp 格式");
+        }
+        if (file.getSize() > 5 * 1024 * 1024) return Result.fail("文件不能超过 5MB");
+        try {
+            String ext = name.substring(name.lastIndexOf('.'));
+            String fileName = id + ext;
+            String dirPath = System.getProperty("user.dir") + File.separator
+                    + uploadDir.replace("/", File.separator) + File.separator + "products";
+            File dir = new File(dirPath);
+            if (!dir.exists()) dir.mkdirs();
+
+            // 删除旧图片（同 ID 不同扩展名）
+            for (File f : dir.listFiles((d, n) -> n.startsWith(id + "."))) {
+                f.delete();
+            }
+
+            file.transferTo(new File(dir, fileName));
+            String photoUrl = "/uploads/products/" + fileName;
+            Product p = productService.findById(id);
+            p.setPhotoUrl(photoUrl);
+            productService.update(p);
+            return Result.success(photoUrl);
+        } catch (IOException e) {
+            return Result.fail("上传失败: " + e.getMessage());
+        }
     }
 
     @GetMapping("/edit/{id}")

@@ -10,5 +10,7 @@ public interface UserService {
     boolean register(User user);
     boolean resetPassword(String email, String newPassword);
     List<Role> getUserRoles(Integer userId);
+    boolean updateAvatar(Integer userId, String avatar);
+    boolean updateEmail(Integer userId, String email);
 }
 

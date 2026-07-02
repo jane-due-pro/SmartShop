@@ -48,6 +48,7 @@ public class UserServiceImpl implements UserService {
             return false;
         }
         user.setActive(1);
+        user.setAvatar("/uploads/avatars/base.jpg");
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userMapper.insert(user);
 
@@ -73,5 +74,15 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<Role> getUserRoles(Integer userId) {
         return roleMapper.findByUserId(userId);
+    }
+
+    @Override
+    public boolean updateAvatar(Integer userId, String avatar) {
+        return userMapper.updateAvatar(userId, avatar) > 0;
+    }
+
+    @Override
+    public boolean updateEmail(Integer userId, String email) {
+        return userMapper.updateEmail(userId, email) > 0;
     }
 }
