@@ -4,9 +4,9 @@ import guat.lxy.bigdata.smartshop.entity.ProductComment;
 import guat.lxy.bigdata.smartshop.entity.User;
 import guat.lxy.bigdata.smartshop.service.ProductCommentService;
 import guat.lxy.bigdata.smartshop.service.UserService;
+import guat.lxy.bigdata.smartshop.util.CurrentUserUtil;
 import guat.lxy.bigdata.smartshop.util.Result;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,12 +21,12 @@ public class CommentController {
     private ProductCommentService commentService;
 
     @Autowired
-    private UserService userService;
+    private CurrentUserUtil currentUserUtil;
 
     @PostMapping("/add")
     @ResponseBody
     public Map<String, Object> add(@RequestBody ProductComment comment, Principal principal) {
-        User user = userService.findByUsername(principal.getName());
+        User user = currentUserUtil.getCurrentUser(principal);
         comment.setUserId(user.getId());
         return Result.of(commentService.save(comment), "评论成功", "评论失败");
     }
@@ -40,7 +40,7 @@ public class CommentController {
     @PostMapping("/like/{id}")
     @ResponseBody
     public Map<String, Object> like(@PathVariable Integer id, Principal principal) {
-        User user = userService.findByUsername(principal.getName());
+        User user = currentUserUtil.getCurrentUser(principal);
         boolean liked = commentService.toggleLike(id, user.getId());
         return liked ? Result.success("点赞成功") : Result.success("已取消点赞");
     }

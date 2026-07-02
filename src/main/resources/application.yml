@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: SmartShop
+  profiles:
+    active: dev
+  config:
+    import: optional:file:.env[.properties]
+  thymeleaf:
+    cache: false
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
+  mail:
+    host: smtp.qq.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+pagehelper:
+  helper-dialect: mysql
+  reasonable: true
+  support-methods-arguments: true
+  params: count=countSql
+
+# 自定义：Redis 缓存键前缀与 TTL（秒）
+smartshop:
+  cache:
+    key-prefix: "smartshop:"
+    ttl:
+      category-list: 600      # 分类列表 10 分钟
+      product-list: 300       # 商品列表/分页 5 分钟
+      verification-code: 300  # 邮箱验证码 5 分钟
+
+file:
+  upload-dir: src/main/resources/static/uploads

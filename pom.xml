@@ -17,6 +17,13 @@
         <java.version>21</java.version>
     </properties>
     <dependencies>
+        <!-- dotenv-java: 加载 .env 环境变量 -->
+        <dependency>
+            <groupId>me.paulschwarz</groupId>
+            <artifactId>dotenv-java</artifactId>
+            <version>4.0.0</version>
+        </dependency>
+
         <!-- Spring Boot Web (注意：是 spring-boot-starter-web，不是 webmvc) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -95,6 +102,12 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
+        </dependency>
+
+        <!-- AOP -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
 
         <!-- 标准测试依赖（包含 JUnit、Spring Test 等） -->

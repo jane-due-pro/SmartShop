@@ -52,37 +52,30 @@ public class ProductServiceImpl implements ProductService {
 
     private String buildSearchKey(Integer catId, String name, Double minPrice,
                                   Double maxPrice, Integer pageNum, Integer pageSize) {
-        String safeName = name == null ? "" : name.replace('|', '_');
-        return KEY_SEARCH_PREFIX
-                + "c=" + (catId == null ? "a" : catId)
-                + "|n=" + safeName
-                + "|min=" + (minPrice == null ? "0" : minPrice)
-                + "|max=" + (maxPrice == null ? "inf" : maxPrice)
-                + "|p=" + pageNum
-                + "|s=" + pageSize;
+        return String.format("%sc=%d:n=%s:min=%.2f:max=%.2f:p=%d:s=%d",
+                KEY_SEARCH_PREFIX,
+                catId != null ? catId : 0,
+                name != null ? name : "",
+                minPrice != null ? minPrice : 0,
+                maxPrice != null ? maxPrice : Double.MAX_VALUE,
+                pageNum,
+                pageSize);
     }
 
     @Override
     public boolean save(Product product) {
-        int rows = productMapper.insert(product);
-        cacheHelper.evictByPattern("smartshop:list:product:*");
-        cacheHelper.evict(KEY_BY_ID + product.getId());
-        return rows > 0;
+        return productMapper.insert(product) > 0;
     }
 
     @Override
     public boolean update(Product product) {
-        int rows = productMapper.update(product);
-        cacheHelper.evictByPattern("smartshop:list:product:*");
         cacheHelper.evict(KEY_BY_ID + product.getId());
-        return rows > 0;
+        return productMapper.update(product) > 0;
     }
 
     @Override
     public boolean deleteById(Integer id) {
-        int rows = productMapper.deleteById(id);
-        cacheHelper.evictByPattern("smartshop:list:product:*");
         cacheHelper.evict(KEY_BY_ID + id);
-        return rows > 0;
+        return productMapper.deleteById(id) > 0;
     }
 }

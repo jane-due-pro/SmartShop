@@ -37,24 +37,18 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public boolean save(Category category) {
-        int rows = categoryMapper.insert(category);
-        cacheHelper.evict(KEY_ALL);
-        return rows > 0;
+        return categoryMapper.insert(category) > 0;
     }
 
     @Override
     public boolean update(Category category) {
-        int rows = categoryMapper.update(category);
-        cacheHelper.evict(KEY_ALL);
         cacheHelper.evict(KEY_BY_ID + category.getId());
-        return rows > 0;
+        return categoryMapper.update(category) > 0;
     }
 
     @Override
     public boolean deleteById(Integer id) {
-        int rows = categoryMapper.deleteById(id);
-        cacheHelper.evict(KEY_ALL);
         cacheHelper.evict(KEY_BY_ID + id);
-        return rows > 0;
+        return categoryMapper.deleteById(id) > 0;
     }
 }

@@ -9,15 +9,16 @@ import guat.lxy.bigdata.smartshop.service.ProductCommentService;
 import guat.lxy.bigdata.smartshop.service.ProductFavoriteService;
 import guat.lxy.bigdata.smartshop.service.ProductService;
 import guat.lxy.bigdata.smartshop.service.UserService;
+import guat.lxy.bigdata.smartshop.util.CurrentUserUtil;
+import guat.lxy.bigdata.smartshop.util.FileUploadUtil;
+import guat.lxy.bigdata.smartshop.util.FileValidationUtil;
 import guat.lxy.bigdata.smartshop.util.Result;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.List;
@@ -42,8 +43,11 @@ public class ProductController {
     @Autowired
     private ProductFavoriteService favoriteService;
 
-    @Value("${file.upload-dir:src/main/resources/static/uploads}")
-    private String uploadDir;
+    @Autowired
+    private CurrentUserUtil currentUserUtil;
+
+    @Autowired
+    private FileUploadUtil fileUploadUtil;
 
     @GetMapping("/list")
     public String list(@RequestParam(defaultValue = "1") Integer pageNum,
@@ -70,7 +74,7 @@ public class ProductController {
     public String detail(@PathVariable Integer id, Model model, Principal principal) {
         Product product = productService.findById(id);
         var comments = commentService.findByProductId(id);
-        User user = userService.findByUsername(principal.getName());
+        User user = currentUserUtil.getCurrentUser(principal);
         commentService.fillLikeInfo(comments, user.getId());
         boolean isAdmin = userService.getUserRoles(user.getId())
                 .stream().anyMatch(r -> r.getRole().equals("ROLE_admin"));
@@ -113,25 +117,17 @@ public class ProductController {
                                            @RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) return Result.fail("请选择文件");
         String name = file.getOriginalFilename();
-        if (name == null || !name.matches("(?i).*\\.(jpg|jpeg|png|gif|webp)$")) {
+        if (!FileValidationUtil.isValidImage(name)) {
             return Result.fail("仅支持 jpg/png/gif/webp 格式");
         }
-        if (file.getSize() > 5 * 1024 * 1024) return Result.fail("文件不能超过 5MB");
+        if (!FileValidationUtil.isValidSize(file)) {
+            return Result.fail("文件不能超过 5MB");
+        }
         try {
-            String ext = name.substring(name.lastIndexOf('.'));
-            String fileName = id + ext;
-            String dirPath = System.getProperty("user.dir") + File.separator
-                    + uploadDir.replace("/", File.separator) + File.separator + "products";
-            File dir = new File(dirPath);
-            if (!dir.exists()) dir.mkdirs();
-
-            // 删除旧图片（同 ID 不同扩展名）
-            for (File f : dir.listFiles((d, n) -> n.startsWith(id + "."))) {
-                f.delete();
-            }
-
-            file.transferTo(new File(dir, fileName));
-            String photoUrl = "/uploads/products/" + fileName;
+            // 删除旧图片
+            fileUploadUtil.deleteOldFiles("products", String.valueOf(id));
+            // 上传新图片
+            String photoUrl = fileUploadUtil.upload(file, "products", String.valueOf(id));
             Product p = productService.findById(id);
             p.setPhotoUrl(photoUrl);
             productService.update(p);
