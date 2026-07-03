@@ -155,6 +155,7 @@ public class ProductController {
     @PostMapping("/delete/{id}")
     @ResponseBody
     public Map<String, Object> delete(@PathVariable Integer id) {
+        fileUploadUtil.deleteOldFiles("products", String.valueOf(id));
         return Result.of(productService.deleteById(id), "删除成功", "删除失败");
     }
 }

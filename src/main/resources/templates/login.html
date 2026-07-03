@@ -416,7 +416,7 @@
                         <div class="form-group">
                             <label class="form-label">密码</label>
                             <div class="input-wrapper password-wrapper">
-                                <input type="password" name="password" id="password" class="form-input password-input" placeholder="请输入密码" required>
+                                <input type="password" name="password" id="password" class="form-input password-input" placeholder="请输入密码" required readonly autocomplete="new-password">
                                 <span class="input-icon">🔒</span>
                                 <button type="button" class="password-toggle" onclick="togglePassword()">
                                     <span id="eyeIcon">👁️</span>
@@ -494,6 +494,14 @@
                 showToast(message, type);
                 sessionStorage.removeItem('toastMessage');
                 sessionStorage.removeItem('toastType');
+            }
+            
+            // 强制清空密码字段（防止浏览器自动填充）
+            const passwordInput = document.getElementById('password');
+            if (passwordInput) {
+                passwordInput.value = '';
+                // 移除 readonly，允许用户输入
+                passwordInput.removeAttribute('readonly');
             }
         });
 

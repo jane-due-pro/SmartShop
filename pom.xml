@@ -17,7 +17,7 @@
         <java.version>21</java.version>
     </properties>
     <dependencies>
-        <!-- dotenv-java: 加载 .env 环境变量 -->
+        <!-- dotenv-java: 加载 .env.properties 环境变量 -->
         <dependency>
             <groupId>me.paulschwarz</groupId>
             <artifactId>dotenv-java</artifactId>
