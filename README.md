@@ -116,9 +116,6 @@ CREATE DATABASE IF NOT EXISTS smart_shop DEFAULT CHARSET utf8mb4;
 USE smart_shop;
 
 -- 2. 执行用户提供的SQL脚本创建表和插入数据
-
--- 3. 执行邮箱验证码表脚本
-source sql/email_verification.sql
 ```
 
 ### 配置修改
@@ -157,6 +154,8 @@ java -jar target/SmartShop-0.0.1-SNAPSHOT.jar
 
 ## 数据库设计
 
+系统共包含7张数据表，以下为各表结构：
+
 ### 用户表 (t_user)
 | 字段 | 类型 | 说明 |
 |------|------|------|
@@ -165,19 +164,20 @@ java -jar target/SmartShop-0.0.1-SNAPSHOT.jar
 | password | VARCHAR(200) | 登录密码 |
 | active | INT(1) | 1可用 0不可用 |
 | email | VARCHAR(200) | 邮箱地址 |
+| avatar | VARCHAR(500) | 用户头像URL |
 
 ### 角色表 (t_role)
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | id | INT | 主键自增 |
-| role | VARCHAR(200) | 角色名 |
+| role | VARCHAR(200) | 角色名（如 ROLE_admin、ROLE_user） |
 
 ### 用户角色关联表 (t_user_role)
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | id | INT | 主键自增 |
-| user_id | INT | 用户ID |
-| role_id | INT | 角色ID |
+| user_id | INT | 用户ID，外键关联t_user表 |
+| role_id | INT | 角色ID，外键关联t_role表 |
 
 ### 商品分类表 (category)
 | 字段 | 类型 | 说明 |
@@ -191,20 +191,30 @@ java -jar target/SmartShop-0.0.1-SNAPSHOT.jar
 |------|------|------|
 | id | INT | 主键自增 |
 | name | VARCHAR(100) | 商品名称 |
-| photo_url | VARCHAR(500) | 图片URL |
+| photo_url | VARCHAR(500) | 商品图片URL |
 | price | DOUBLE | 商品价格 |
 | descp | VARCHAR(500) | 商品描述 |
 | release_date | DATE | 发布日期 |
-| cat_id | INT | 分类ID |
+| cat_id | INT | 分类ID，外键关联category表 |
 
-### 邮箱验证码表 (email_verification)
+### 商品评论表 (product_comment)
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | id | INT | 主键自增 |
-| email | VARCHAR(200) | 邮箱地址 |
-| code | VARCHAR(10) | 验证码 |
-| expire_time | DATETIME | 过期时间 |
-| used | INT(1) | 0未使用 1已使用 |
+| product_id | INT | 商品ID，外键关联product表 |
+| user_id | INT | 用户ID，外键关联t_user表 |
+| parent_id | INT | 父评论ID，用于回复嵌套 |
+| content | TEXT | 评论内容 |
+| rating | INT | 评分（1-5星） |
+| create_time | DATETIME | 创建时间 |
+
+### 商品收藏表 (product_favorite)
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INT | 主键自增 |
+| product_id | INT | 商品ID，外键关联product表 |
+| user_id | INT | 用户ID，外键关联t_user表 |
+| create_time | DATETIME | 收藏时间 |
 
 ## 功能测试
 

@@ -4,7 +4,12 @@ import guat.lxy.bigdata.smartshop.entity.User;
 import guat.lxy.bigdata.smartshop.service.EmailService;
 import guat.lxy.bigdata.smartshop.service.UserService;
 import guat.lxy.bigdata.smartshop.util.Result;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,7 +25,12 @@ public class AuthController {
     private EmailService emailService;
 
     @GetMapping("/login")
-    public String loginPage() {
+    public String loginPage(HttpServletRequest request) {
+        // 检查用户是否已登录，如果已登录则自动清除登录状态
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
+            new SecurityContextLogoutHandler().logout(request, null, auth);
+        }
         return "login";
     }
 

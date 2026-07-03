@@ -18,11 +18,7 @@
     </properties>
     <dependencies>
         <!-- dotenv-java: 加载 .env.properties 环境变量 -->
-        <dependency>
-            <groupId>me.paulschwarz</groupId>
-            <artifactId>dotenv-java</artifactId>
-            <version>4.0.0</version>
-        </dependency>
+
 
         <!-- Spring Boot Web (注意：是 spring-boot-starter-web，不是 webmvc) -->
         <dependency>
